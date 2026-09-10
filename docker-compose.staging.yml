@@ -1,0 +1,31 @@
+name: the-palace-atlas-a-keeper-s-logbook-for-memo-staging
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: the-palace-atlas-a-keeper-s-logbook-for-memo-staging-web
+    expose:
+      - "80"
+    environment:
+      # Runtime config, injected into /env.js at container start. All optional.
+      SENTRY_DSN: "${SENTRY_DSN:-}"
+      UMAMI_URL: "${UMAMI_URL:-}"
+      UMAMI_WEBSITE_ID: "${UMAMI_WEBSITE_ID:-}"
+      # Staging-only demo seed flag (a later feature acts on it).
+      SEED_DEMO: "1"
+    networks:
+      - default
+      - staging
+    mem_limit: 512m
+    oom_score_adj: 800
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+networks:
+  staging:
+    external: true
+    name: factory-staging-net
