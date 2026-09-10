@@ -1,5 +1,5 @@
 import { migrate } from "../../model/migrate";
-import { type ImportError, validateImport } from "../../model/validate";
+import { MAX_IMPORT_BYTES, type ImportError, validateImport } from "../../model/validate";
 import type { Atlas } from "../../model/atlas";
 
 export const IMPORT_ERROR_COPY: Record<ImportError, string> = {
@@ -17,12 +17,32 @@ export type ImportResult =
   | { ok: true; atlas: Atlas }
   | { ok: false; reason: ImportError; message: string };
 
+// Read a File as text. Uses FileReader so it works both in browsers and in
+// the jsdom test environment (which does not implement File.text()).
+function readFileText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+    reader.readAsText(file);
+  });
+}
+
 // Read a picked file, validate it before touching storage, and on success
 // return the migrated atlas for replaceAtlas. Never throws on bad input.
 export async function readAndImport(file: File): Promise<ImportResult> {
+  // Check the declared size before reading the body.
+  if (file.size > MAX_IMPORT_BYTES) {
+    return {
+      ok: false,
+      reason: "too_large",
+      message: IMPORT_ERROR_COPY.too_large,
+    };
+  }
+
   let text: string;
   try {
-    text = await file.text();
+    text = await readFileText(file);
   } catch {
     return {
       ok: false,

@@ -37,3 +37,19 @@ export async function putAtlasRecord(atlas: Atlas): Promise<void> {
   const db = await getDB();
   await db.put(STORE, atlas, CURRENT_KEY);
 }
+
+// Drop the cached connection so a test can start from a clean database.
+// Not used by the running app.
+export async function resetDbForTests(): Promise<void> {
+  if (dbPromise) {
+    const db = await dbPromise;
+    db.close();
+    dbPromise = null;
+  }
+  await new Promise<void>((resolve, reject) => {
+    const req = indexedDB.deleteDatabase(DB_NAME);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => resolve();
+  });
+}
