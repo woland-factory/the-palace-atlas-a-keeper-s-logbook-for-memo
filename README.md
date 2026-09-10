@@ -86,7 +86,15 @@ npm test            # vitest run
 npm run build       # type-check and bundle
 ```
 
-Every change should keep all three green.
+End-to-end tests use Playwright against the production build. They start with
+a clean browser profile, so there is no database to provision. Run them in the
+pinned Playwright container, which carries the matching browser build:
+
+```bash
+bash scripts/e2e.sh
+```
+
+Every change should keep all of these green.
 
 ## License
 
