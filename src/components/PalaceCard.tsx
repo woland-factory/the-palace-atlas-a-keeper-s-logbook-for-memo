@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import type { Palace } from "../model/atlas";
 import { SAMPLE_PALACE_IDS } from "../features/sample/sample";
+import { PalaceThumbnail } from "./sketch/PalaceThumbnail";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -47,9 +49,14 @@ export function PalaceCard({
 
   return (
     <li className="palace-card">
-      <div className="palace-card__thumb" aria-hidden="true">
-        Plan
-      </div>
+      <Link
+        to={`/palace/${palace.id}`}
+        className="palace-card__thumb"
+        aria-hidden="true"
+        tabIndex={-1}
+      >
+        <PalaceThumbnail palace={palace} />
+      </Link>
       <div className="palace-card__body">
         {editing ? (
           <form onSubmit={submit} className="field">
@@ -68,7 +75,9 @@ export function PalaceCard({
           </form>
         ) : (
           <h3 className="palace-card__name">
-            {palace.name}
+            <Link to={`/palace/${palace.id}`} className="palace-card__link">
+              {palace.name}
+            </Link>
             {isSample && <span className="tag">Sample</span>}
           </h3>
         )}

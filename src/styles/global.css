@@ -228,6 +228,13 @@ button {
   font-size: 1.1rem;
   overflow-wrap: anywhere;
 }
+.palace-card__link {
+  color: var(--color-text);
+  text-decoration: none;
+}
+.palace-card__link:hover {
+  text-decoration: underline;
+}
 .palace-card__meta {
   margin: var(--space-1) 0 0;
   color: var(--color-text-muted);
@@ -419,6 +426,298 @@ button {
   gap: var(--space-2);
   justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+/* Palace card thumbnail (fills the reserved slot) */
+.palace-card__thumb {
+  padding: 0;
+  overflow: hidden;
+  text-decoration: none;
+}
+.palace-card__thumb .thumb {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.thumb__outline {
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.thumb__path {
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  opacity: 0.7;
+  vector-effect: non-scaling-stroke;
+}
+.thumb__spot {
+  fill: var(--color-accent);
+  stroke: var(--color-surface);
+}
+.thumb--empty .thumb__placeholder {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+}
+
+/* Editor */
+.editor__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.editor__back {
+  min-height: var(--tap-target);
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+.editor__back::before {
+  content: "‹";
+  margin-right: var(--space-1);
+  font-size: 1.2em;
+}
+.editor__title {
+  font-size: 1.4rem;
+  margin: 0 0 var(--space-3);
+  overflow-wrap: anywhere;
+}
+.editor__toolbar {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+.editor__toolbar .btn--secondary[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+.editor__notice {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+.editor__surface {
+  position: relative;
+  width: 100%;
+  height: min(60vh, 460px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+.sketch-surface__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      var(--color-surface-alt) 39px,
+      var(--color-surface-alt) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      var(--color-surface-alt) 39px,
+      var(--color-surface-alt) 40px
+    );
+}
+.sketch-surface__svg[data-tool="outline"] {
+  cursor: crosshair;
+}
+.editor__invite {
+  position: absolute;
+  inset: auto 0 var(--space-4);
+  text-align: center;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+.sketch-outline {
+  stroke: var(--color-border);
+  stroke-width: 6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+.sketch-path {
+  stroke: var(--color-accent);
+  stroke-width: 4;
+  stroke-linejoin: round;
+  opacity: 0.65;
+}
+.spot {
+  cursor: pointer;
+}
+.spot__marker {
+  fill: var(--color-accent);
+  stroke: var(--color-surface);
+  stroke-width: 3;
+}
+.spot__num {
+  fill: var(--color-accent-contrast);
+  font-weight: 700;
+  pointer-events: none;
+}
+.spot__ring {
+  stroke: var(--color-focus);
+  stroke-width: 5;
+}
+.spot:focus-visible {
+  outline: none;
+}
+.spot:focus-visible .spot__marker {
+  stroke: var(--color-focus);
+  stroke-width: 5;
+}
+
+/* Inspector */
+.inspector {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+.inspector__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.inspector__textarea {
+  min-height: 88px;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  line-height: 1.4;
+}
+.inspector__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Spot list */
+.spot-list {
+  margin-bottom: var(--space-5);
+}
+.spot-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.spot-list__item {
+  width: 100%;
+  min-height: var(--tap-target);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+}
+.spot-list__item.is-selected {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+.spot-list__num {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.spot-list__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.spot-list__name {
+  font-weight: 600;
+}
+.spot-list__snippet {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Guided first run */
+.guide {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  position: relative;
+}
+.guide__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.guide__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+.guide__step.is-done {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+.guide__check {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  background: var(--color-surface);
+}
+.guide__step.is-done .guide__check {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+.guide__skip {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-3);
 }
 
 /* Utility */

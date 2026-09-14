@@ -40,15 +40,15 @@ describe("EstateOverview", () => {
 
   it("adding a palace moves the screen from empty to populated with placeholders", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<EstateOverview />);
+    const { container } = renderWithProviders(<EstateOverview />);
     await user.click(await screen.findByRole("button", { name: "Add your first palace" }));
 
-    // Card now present with reserved thumbnail + health placeholders.
+    // Card now present with thumbnail slot + health placeholder.
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 3 })).toBeInTheDocument(),
     );
     expect(screen.getByText("Not walked yet")).toBeInTheDocument();
-    expect(screen.getByText("Plan")).toBeInTheDocument();
+    expect(container.querySelector(".palace-card__thumb")).not.toBeNull();
     expect(screen.getByRole("button", { name: "Rename" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
   });
