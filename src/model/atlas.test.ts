@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SCHEMA_VERSION, newAtlas, newPalace } from "./atlas";
+import { SCHEMA_VERSION, newAtlas, newPalace, newSpot } from "./atlas";
 import { migrate } from "./migrate";
 
 describe("model factories", () => {
@@ -24,6 +24,24 @@ describe("model factories", () => {
 
   it("newPalace ids are unique", () => {
     expect(newPalace("a").id).not.toBe(newPalace("b").id);
+  });
+
+  it("newSpot is a valid spot with inert fsrs at the given coord and order", () => {
+    const s = newSpot(120, 340, 2);
+    expect(s.id).toMatch(/[0-9a-f-]{36}/);
+    expect(s.x).toBe(120);
+    expect(s.y).toBe(340);
+    expect(s.order).toBe(2);
+    expect(s.label).toBe("");
+    expect(s.contents).toBe("");
+    expect(s.fsrs).toMatchObject({
+      stability: 0,
+      difficulty: 0,
+      reps: 0,
+      lapses: 0,
+      state: 0,
+    });
+    expect(Number.isNaN(Date.parse(s.fsrs.due))).toBe(false);
   });
 });
 

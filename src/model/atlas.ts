@@ -64,3 +64,26 @@ export function newPalace(name: string): Palace {
     walks: [],
   };
 }
+
+// A fresh spot at a logical coordinate and walk position. The fsrs block holds
+// inert placeholder values so the Spot type is valid and the atlas stays
+// well-formed. The scheduling EPIC owns meaningful fsrs values; nothing here
+// schedules anything.
+export function newSpot(x: number, y: number, order: number): Spot {
+  return {
+    id: newId(),
+    order,
+    x,
+    y,
+    label: "",
+    contents: "",
+    fsrs: {
+      stability: 0,
+      difficulty: 0,
+      due: new Date().toISOString(),
+      reps: 0,
+      lapses: 0,
+      state: 0,
+    },
+  };
+}

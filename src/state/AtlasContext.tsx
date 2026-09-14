@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { newAtlas, newPalace, type Atlas } from "../model/atlas";
+import { newAtlas, newPalace, type Atlas, type Palace } from "../model/atlas";
 import { loadAtlas } from "../persistence/atlasStore";
 import { Autosaver, type SaveStatus } from "../persistence/autosave";
 
@@ -18,6 +18,7 @@ export interface AtlasContextValue {
   saveStatus: SaveStatus;
   createPalace: (name: string) => void;
   renamePalace: (id: string, name: string) => void;
+  updatePalace: (id: string, update: (palace: Palace) => Palace) => void;
   deletePalace: (id: string) => void;
   replaceAtlas: (atlas: Atlas) => void;
   retrySave: () => void;
@@ -103,6 +104,23 @@ export function AtlasProvider({
     });
   }, []);
 
+  // The single path for every sketch edit. It maps over the palaces, applies
+  // the updater to the one that matches, and schedules a debounced save, so all
+  // spot and outline edits reuse the same autosave and its status indicator.
+  const updatePalace = useCallback(
+    (id: string, update: (palace: Palace) => Palace) => {
+      setAtlas((current) => {
+        const next: Atlas = {
+          ...current,
+          palaces: current.palaces.map((p) => (p.id === id ? update(p) : p)),
+        };
+        saverRef.current.schedule(next);
+        return next;
+      });
+    },
+    [],
+  );
+
   const deletePalace = useCallback((id: string) => {
     setAtlas((current) => {
       const next: Atlas = {
@@ -131,6 +149,7 @@ export function AtlasProvider({
       saveStatus,
       createPalace,
       renamePalace,
+      updatePalace,
       deletePalace,
       replaceAtlas,
       retrySave,
@@ -141,6 +160,7 @@ export function AtlasProvider({
       saveStatus,
       createPalace,
       renamePalace,
+      updatePalace,
       deletePalace,
       replaceAtlas,
       retrySave,
