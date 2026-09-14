@@ -215,6 +215,47 @@ test("keyboard: activate Add spot places a spot and announces it", async ({ page
   );
 });
 
+test("walk a palace: reveal, grade to the summary, and see health reflected", async ({
+  page,
+}) => {
+  await openNewPalace(page);
+
+  // Place two spots and file contents at the first.
+  await surface(page).click({ position: { x: 80, y: 90 } });
+  await expect(page.getByRole("heading", { level: 2, name: "Spot 1" })).toBeVisible();
+  await page.getByLabel("What lives here").fill("A red kite leans on the frame.");
+  await surface(page).click({ position: { x: 220, y: 210 } });
+  await expect(markers(page)).toHaveCount(2);
+
+  // Before any walk, the list reads the honest unwalked state.
+  await expect(page.getByText("Not walked yet").first()).toBeVisible();
+
+  // Start the walk and step through both spots.
+  await page.getByRole("link", { name: "Walk this palace" }).click();
+  await expect(page.getByText("Spot 1 of 2")).toBeVisible();
+
+  await page.getByRole("button", { name: "Reveal" }).click();
+  await expect(page.getByText("A red kite leans on the frame.")).toBeVisible();
+  await page.getByRole("button", { name: "Sharp" }).click();
+
+  await expect(page.getByText("Spot 2 of 2")).toBeVisible();
+  await page.getByRole("button", { name: "Reveal" }).click();
+  await page.getByRole("button", { name: "Shaky" }).click();
+
+  // The summary tallies the walk.
+  await expect(page.getByRole("heading", { name: "Walk done." })).toBeVisible();
+  await expect(page.getByText("Sharp 1 · Shaky 1 · Missed 0")).toBeVisible();
+
+  // Back on the plan, the palace view reflects the fresh grades.
+  await page.getByRole("link", { name: "Back to the plan" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "New palace" })).toBeVisible();
+  const spotNav = page.getByRole("navigation", { name: "Spots in walking order" });
+  // Right after a walk both spots read a due date, and none stays unwalked.
+  await expect(spotNav.getByText(/· due/).first()).toBeVisible();
+  await expect(spotNav.getByText(/· due/)).toHaveCount(2);
+  await expect(spotNav.getByText("Not walked yet")).toHaveCount(0);
+});
+
 test("guided first run shows once, Skip dismisses, and it never returns", async ({
   page,
 }) => {

@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { renderWithProviders } from "../../test/renderWithProviders";
+import userEvent from "@testing-library/user-event";
 import { AppHeader } from "../components/AppHeader";
 import { EstateOverview } from "./EstateOverview";
 import { PalaceEditor } from "./PalaceEditor";
+import { WalkSession } from "./WalkSession";
 import { AtlasProvider } from "../state/AtlasContext";
 import { ToastProvider } from "../components/Toast";
 import { saveAtlas } from "../persistence/atlasStore";
-import { newAtlas, newPalace } from "../model/atlas";
+import { newAtlas, newPalace, newSpot } from "../model/atlas";
 import { resetDbForTests } from "../persistence/db";
 
 beforeEach(async () => {
@@ -79,6 +81,42 @@ describe("responsive structure at 390px", () => {
     // Toolbar controls carry the tap-target button class.
     for (const btn of screen.getAllByRole("button")) {
       expect(btn.className).toMatch(/\bbtn\b/);
+    }
+  });
+
+  it("the walk is one-handed at 390px: tap-target grade buttons, no fixed widths", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    const palace = newPalace("Childhood home");
+    palace.spots = [{ ...newSpot(200, 200, 0), label: "Front door", contents: "A kite" }];
+    await saveAtlas({ ...newAtlas(), palaces: [palace] });
+
+    const { container } = render(
+      <MemoryRouter initialEntries={[`/palace/${palace.id}/walk`]}>
+        <ToastProvider>
+          <AtlasProvider>
+            <Routes>
+              <Route path="/palace/:id/walk" element={<WalkSession />} />
+            </Routes>
+          </AtlasProvider>
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByText("Spot 1 of 1")).toBeInTheDocument(),
+    );
+
+    // Fluid container, no inline pixel width wider than the viewport.
+    expect(container.querySelector(".container")).not.toBeNull();
+    const widthPinned = Array.from(container.querySelectorAll<HTMLElement>("*")).filter(
+      (el) => /width:\s*\d{3,}px/.test(el.getAttribute("style") ?? ""),
+    );
+    expect(widthPinned).toEqual([]);
+
+    // Reveal, then the three grade buttons each carry the tap-target class.
+    await user.click(screen.getByRole("button", { name: "Reveal" }));
+    for (const name of ["Missed", "Shaky", "Sharp"]) {
+      expect(screen.getByRole("button", { name }).className).toMatch(/\bbtn\b/);
     }
   });
 });

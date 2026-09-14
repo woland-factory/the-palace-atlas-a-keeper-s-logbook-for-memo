@@ -7,9 +7,22 @@ and keep the whole atlas safe outside your head in one file you own.
 
 It gives you the estate overview, palace records you can create, rename and
 delete, and a sketch editor where you draw each palace as ordered, numbered
-spots along a walk and file what lives at each one. Everything autosaves to
-local storage, and the whole atlas exports and imports as one file. Recall
-walks and the decay heat map that colors your floor plans come next.
+spots along a walk and file what lives at each one. You then run a recall walk:
+step through the spots in order, reveal what you filed, and grade each one
+Missed, Shaky, or Sharp. Everything autosaves to local storage, and the whole
+atlas exports and imports as one file.
+
+## Recall walks and scheduling
+
+From a palace with spots, "Walk this palace" steps through the spots in walking
+order, one at a time. Each step highlights the current spot on a read-only plan,
+prompts your recall, reveals the filed contents when you ask, and takes one of
+three grades. The grades feed [FSRS](https://github.com/open-spaced-repetition/ts-fsrs),
+a spaced-repetition scheduler, which advances each spot's memory state and sets
+its next due date. The palace view then reads each spot's health in plain words:
+`Not walked yet`, `Sharp`, `Holding`, `Fading`, or `At risk`. A spot you have
+never walked reads `Not walked yet`, never a fake score. The colored heat map
+that paints these bands onto your floor plan comes next.
 
 Your data stays in your browser. There is no account and no server. Nothing
 you write leaves your machine unless you export it yourself.
@@ -63,8 +76,8 @@ values.
 Settings has one primary action: export your atlas to a single JSON file.
 Import reads that file back after checking its size, shape, and version, so a
 truncated or foreign file is refused with a plain message instead of a crash.
-The file carries every palace and its spots, and it will carry walk history in
-a later release, so the format is stable across versions.
+The file carries every palace, its spots, and the recall-walk history with each
+spot's scheduling state, so the format is stable across versions.
 
 ## Develop and test
 
@@ -74,7 +87,8 @@ The code lives in `src/`:
   the forward-only migration framework.
 - `persistence/`: the IndexedDB layer and debounced autosave.
 - `state/`: the React context that holds the current atlas.
-- `features/`: export/import and the bundled sample.
+- `features/`: export/import, the bundled sample, and `walk/` (the FSRS
+  scoring adapter and pure walk-progression helpers).
 - `routes/` and `components/`: the screens and UI pieces.
 - `observability/`: Sentry and Umami wiring that no-ops without config.
 
