@@ -106,7 +106,7 @@ describe("PalaceEditor", () => {
     // Inspector opens on the freshly placed, selected spot.
     expect(await screen.findByRole("heading", { name: "Spot 1" })).toBeInTheDocument();
     // The spot shows in the ordered list too.
-    expect(clickListSpot("Spot 1")).toBeInTheDocument();
+    expect(clickListSpot(/Spot 1/)).toBeInTheDocument();
 
     // A second spot draws the connecting path.
     firePointer(svg, "pointerdown", 600, 500);

@@ -245,7 +245,30 @@ export function PalaceEditor() {
         </Link>
         <SaveStatus status={saveStatus} onRetry={retrySave} />
       </div>
-      <h1 className="editor__title">{palace.name}</h1>
+      <div className="editor__title-row">
+        <h1 className="editor__title">{palace.name}</h1>
+        {spots.length > 0 ? (
+          <Link
+            className="btn btn--primary editor__walk"
+            to={`/palace/${palace.id}/walk`}
+          >
+            Walk this palace
+          </Link>
+        ) : (
+          <button
+            className="btn btn--primary editor__walk"
+            disabled
+            aria-describedby="walk-hint"
+          >
+            Walk this palace
+          </button>
+        )}
+      </div>
+      {spots.length === 0 && (
+        <p id="walk-hint" className="editor__notice">
+          Add a spot to walk this palace.
+        </p>
+      )}
 
       <div className="editor__toolbar">
         <button
@@ -315,6 +338,7 @@ export function PalaceEditor() {
         spots={spots}
         selectedSpotId={selectedSpotId}
         onSelect={selectSpot}
+        now={new Date()}
       />
 
       <div className="visually-hidden" role="status" aria-live="polite">
