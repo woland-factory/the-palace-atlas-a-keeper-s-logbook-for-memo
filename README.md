@@ -5,10 +5,11 @@ technique build dozens of palaces and then lose them. This web workbench is
 the notebook that keeps them: sketch each palace once, file what lives where,
 and keep the whole atlas safe outside your head in one file you own.
 
-This is the foundation release. It gives you the estate overview, palace
-records you can create, rename and delete, autosaved local storage, and
-whole-atlas export and import. The drawing surface, recall walks, and the
-decay heat map that colors your floor plans come next.
+It gives you the estate overview, palace records you can create, rename and
+delete, and a sketch editor where you draw each palace as ordered, numbered
+spots along a walk and file what lives at each one. Everything autosaves to
+local storage, and the whole atlas exports and imports as one file. Recall
+walks and the decay heat map that colors your floor plans come next.
 
 Your data stays in your browser. There is no account and no server. Nothing
 you write leaves your machine unless you export it yourself.
@@ -62,8 +63,8 @@ values.
 Settings has one primary action: export your atlas to a single JSON file.
 Import reads that file back after checking its size, shape, and version, so a
 truncated or foreign file is refused with a plain message instead of a crash.
-The file carries every palace and, in later releases, every spot and walk, so
-the format is stable across versions.
+The file carries every palace and its spots, and it will carry walk history in
+a later release, so the format is stable across versions.
 
 ## Develop and test
 

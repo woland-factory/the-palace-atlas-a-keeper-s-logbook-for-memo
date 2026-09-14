@@ -1,5 +1,21 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
+
+// Create a palace on the overview and open its sketch editor.
+async function openNewPalace(page: Page) {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Add your first palace" }).click();
+  await page.getByRole("link", { name: "New palace" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "New palace" })).toBeVisible();
+}
+
+function surface(page: Page) {
+  return page.locator("svg.sketch-surface__svg");
+}
+
+function markers(page: Page) {
+  return page.locator("svg.sketch-surface__svg [data-spot-id]");
+}
 
 // Each Playwright test gets a fresh browser context, so IndexedDB starts
 // empty every time. Reloads within a test keep the same context, which is
@@ -90,4 +106,125 @@ test("export then import restores the same atlas", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 3, name: "Grandmother's flat" }),
   ).toBeVisible();
+});
+
+test("sketch a palace: place spots, name one, and it survives a reload", async ({
+  page,
+}) => {
+  await openNewPalace(page);
+
+  // Place two spots by tapping the plan.
+  await surface(page).click({ position: { x: 80, y: 90 } });
+  await expect(page.getByRole("heading", { level: 2, name: "Spot 1" })).toBeVisible();
+  await surface(page).click({ position: { x: 220, y: 210 } });
+  await expect(markers(page)).toHaveCount(2);
+  // A single path connects the spots in order.
+  await expect(page.locator("path.sketch-path")).toHaveCount(1);
+
+  // Name the first spot and write its contents.
+  await page
+    .getByRole("navigation", { name: "Spots in walking order" })
+    .getByRole("button", { name: "Spot 1" })
+    .click();
+  await page.getByLabel("Spot name").fill("Front door");
+  await page.getByLabel("What lives here").fill("A red kite leans on the frame.");
+  await expect(page.getByRole("main").getByText("Saved")).toBeVisible();
+
+  // Reload: the geometry and text are still there.
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "New palace" })).toBeVisible();
+  await expect(markers(page)).toHaveCount(2);
+  await expect(
+    page.locator("svg.sketch-surface__svg [data-spot-id]").first(),
+  ).toHaveAttribute("aria-label", "Spot 1, Front door");
+});
+
+test("reorder and delete are reflected after a reload", async ({ page }) => {
+  await openNewPalace(page);
+
+  await surface(page).click({ position: { x: 90, y: 90 } });
+  await surface(page).click({ position: { x: 240, y: 220 } });
+  await expect(markers(page)).toHaveCount(2);
+
+  // The second spot is selected; name it and move it to first.
+  await page.getByLabel("Spot name").fill("Beacon");
+  await page.getByRole("button", { name: "Move up" }).click();
+  await expect(page.getByRole("button", { name: "Spot 1, Beacon" })).toBeVisible();
+
+  await expect(page.getByRole("main").getByText("Saved")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Spot 1, Beacon" })).toBeVisible();
+
+  // Delete it and confirm the deletion persists.
+  await page.getByRole("button", { name: "Spot 1, Beacon" }).click();
+  await page.getByRole("button", { name: "Remove spot" }).click();
+  await expect(markers(page)).toHaveCount(1);
+  await expect(page.getByRole("main").getByText("Saved")).toBeVisible();
+  await page.reload();
+  await expect(markers(page)).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Spot 1, Beacon" })).toHaveCount(0);
+});
+
+test("the overview shows a mini plan for a drawn palace", async ({ page }) => {
+  await page.goto("/settings");
+  await page
+    .getByRole("heading", { name: "Sample atlas" })
+    .locator("xpath=ancestor::section")
+    .getByRole("button", { name: "Load the sample" })
+    .click();
+  await expect(page.getByText("Sample loaded.")).toBeVisible();
+
+  await page.getByRole("link", { name: "Palaces" }).click();
+  // The drawn sample palace shows spot markers in its card thumbnail.
+  await expect(
+    page.locator(".palace-card__thumb circle.thumb__spot").first(),
+  ).toBeVisible();
+});
+
+test("editor at 390px has no page scroll and the wheel changes the viewBox", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 780 });
+  await openNewPalace(page);
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+
+  const before = await surface(page).getAttribute("viewBox");
+  await surface(page).hover();
+  await page.mouse.wheel(0, -200);
+  await expect(async () => {
+    const after = await surface(page).getAttribute("viewBox");
+    expect(after).not.toBe(before);
+  }).toPass();
+});
+
+test("keyboard: activate Add spot places a spot and announces it", async ({ page }) => {
+  await openNewPalace(page);
+
+  const add = page.getByRole("button", { name: "Add spot" });
+  await add.focus();
+  await expect(add).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByRole("heading", { level: 2, name: "Spot 1" })).toBeVisible();
+  await expect(page.locator(".visually-hidden[role='status']")).toContainText(
+    "Placed spot 1.",
+  );
+});
+
+test("guided first run shows once, Skip dismisses, and it never returns", async ({
+  page,
+}) => {
+  await openNewPalace(page);
+
+  await expect(page.getByText("Tap the plan to place a spot.")).toBeVisible();
+  await page.getByRole("button", { name: "Skip" }).click();
+  await expect(page.getByText("Tap the plan to place a spot.")).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "New palace" })).toBeVisible();
+  await expect(page.getByText("Tap the plan to place a spot.")).toHaveCount(0);
 });
