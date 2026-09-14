@@ -669,6 +669,200 @@ button {
   white-space: nowrap;
 }
 
+/* Palace title row: name plus the page-level Walk action */
+.editor__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+.editor__title-row .editor__title {
+  margin: 0;
+}
+.editor__walk {
+  flex: 0 0 auto;
+}
+
+/* Per-spot health readout in the ordered list */
+.spot-list__health {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Walk screen */
+.walk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: calc(100vh - 120px);
+}
+.walk__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.walk__leave {
+  padding-left: 0;
+}
+.walk__progress {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.walk__plan {
+  width: 100%;
+  height: min(42vh, 340px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.walk-plan {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.walk-plan__outline {
+  stroke: var(--color-border);
+  stroke-width: 6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+.walk-plan__path {
+  stroke: var(--color-accent);
+  stroke-width: 4;
+  stroke-linejoin: round;
+  opacity: 0.35;
+}
+.walk-plan__spot {
+  opacity: 0.4;
+}
+.walk-plan__spot.is-active {
+  opacity: 1;
+}
+.walk-plan__marker {
+  fill: var(--color-accent);
+  stroke: var(--color-surface);
+  stroke-width: 3;
+}
+.walk-plan__num {
+  fill: var(--color-accent-contrast);
+  font-weight: 700;
+}
+.walk-plan__ring {
+  stroke: var(--color-focus);
+  stroke-width: 5;
+}
+
+/* Step: prompt, reveal, grade band pinned in thumb reach */
+.walk__band {
+  margin-top: auto;
+}
+.walk-step {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+.walk-step__name {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.walk-step__prompt {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.walk-step__actions .walk-step__reveal {
+  width: 100%;
+  min-height: 56px;
+}
+.walk-step__contents {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+.walk-step__text {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.walk-step__empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.walk-step__grades {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+.btn--grade {
+  min-height: 56px;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.btn--grade:hover {
+  background: var(--color-surface-alt);
+}
+.btn--grade:active {
+  transform: translateY(1px);
+}
+.btn--grade-sharp {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Summary */
+.walk-summary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-5) var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+.walk-summary__heading {
+  margin: 0;
+}
+.walk-summary__tally {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.walk-summary__spots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.walk-summary__spot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.walk-summary__spot-name {
+  overflow-wrap: anywhere;
+}
+.walk-summary__spot-health {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.walk-summary__actions .btn {
+  width: 100%;
+}
+
 /* Guided first run */
 .guide {
   background: var(--color-surface-alt);
