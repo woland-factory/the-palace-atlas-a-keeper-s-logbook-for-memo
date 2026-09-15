@@ -914,6 +914,159 @@ button {
   padding: 0 var(--space-3);
 }
 
+/* Health heat map: band color and pattern keyed off data-health.
+   Color is pure CSS over a pre-computed per-spot health map, so pan/zoom
+   never recomputes anything. Every band also carries a non-color signal:
+   sharp/holding solid, fading a dashed ring, atRisk a heavy halo ring,
+   unwalked a hollow marker. */
+[data-health="sharp"] .spot__marker,
+[data-health="sharp"] .walk-plan__marker,
+[data-health="sharp"] .thumb__spot {
+  fill: var(--health-sharp);
+}
+[data-health="holding"] .spot__marker,
+[data-health="holding"] .walk-plan__marker,
+[data-health="holding"] .thumb__spot {
+  fill: var(--health-holding);
+}
+[data-health="fading"] .spot__marker,
+[data-health="fading"] .walk-plan__marker,
+[data-health="fading"] .thumb__spot {
+  fill: var(--health-fading);
+}
+[data-health="atRisk"] .spot__marker,
+[data-health="atRisk"] .walk-plan__marker,
+[data-health="atRisk"] .thumb__spot {
+  fill: var(--health-atrisk);
+}
+[data-health="unwalked"] .spot__marker,
+[data-health="unwalked"] .walk-plan__marker,
+[data-health="unwalked"] .thumb__spot {
+  fill: var(--color-surface);
+  stroke: var(--health-unwalked);
+}
+
+/* The spot number stays legible on every band: per-band ink, >= 4.5:1. */
+[data-health="sharp"] .spot__num,
+[data-health="sharp"] .walk-plan__num {
+  fill: var(--health-sharp-ink);
+}
+[data-health="holding"] .spot__num,
+[data-health="holding"] .walk-plan__num {
+  fill: var(--health-holding-ink);
+}
+[data-health="fading"] .spot__num,
+[data-health="fading"] .walk-plan__num {
+  fill: var(--health-fading-ink);
+}
+[data-health="atRisk"] .spot__num,
+[data-health="atRisk"] .walk-plan__num {
+  fill: var(--health-atrisk-ink);
+}
+[data-health="unwalked"] .spot__num,
+[data-health="unwalked"] .walk-plan__num {
+  fill: var(--color-text);
+}
+
+/* The failing-band pattern ring (geometry set inline where it renders). */
+.health-ring {
+  fill: none;
+}
+[data-health="fading"] .health-ring {
+  stroke: var(--health-fading);
+}
+[data-health="atRisk"] .health-ring {
+  stroke: var(--health-atrisk);
+}
+
+/* Health words in lists agree with the plan's colors. */
+.spot-list__health[data-health="sharp"],
+.walk-summary__spot-health[data-health="sharp"],
+.palace-card__health[data-health="sharp"] .palace-card__health-word {
+  color: var(--health-sharp-text);
+}
+.spot-list__health[data-health="holding"],
+.walk-summary__spot-health[data-health="holding"],
+.palace-card__health[data-health="holding"] .palace-card__health-word {
+  color: var(--health-holding-text);
+}
+.spot-list__health[data-health="fading"],
+.walk-summary__spot-health[data-health="fading"],
+.palace-card__health[data-health="fading"] .palace-card__health-word {
+  color: var(--health-fading-text);
+}
+.spot-list__health[data-health="atRisk"],
+.walk-summary__spot-health[data-health="atRisk"],
+.palace-card__health[data-health="atRisk"] .palace-card__health-word {
+  color: var(--health-atrisk-text);
+}
+
+/* Card health dot, tinted by band. */
+.palace-card__health[data-health="sharp"]::before {
+  background: var(--health-sharp);
+}
+.palace-card__health[data-health="holding"]::before {
+  background: var(--health-holding);
+}
+.palace-card__health[data-health="fading"]::before {
+  background: var(--health-fading);
+}
+.palace-card__health[data-health="atRisk"]::before {
+  background: var(--health-atrisk);
+}
+.palace-card__health[data-health="unwalked"]::before {
+  background: var(--color-surface);
+  border: 2px solid var(--health-unwalked);
+}
+.palace-card__health-word {
+  font-weight: 600;
+}
+
+/* Legend: a compact key that wraps at 390px. */
+.health-legend {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+.health-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.health-legend__swatch {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+.health-legend .spot__marker {
+  stroke-width: 1.5;
+}
+
+/* The most-at-risk card's lead chip. */
+.tag--walk-next {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+
+/* Post-walk payoff: the just-updated plan, glowing, above the tally. */
+.walk-summary__plan {
+  height: min(38vh, 300px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.walk-plan--health .walk-plan__spot {
+  opacity: 1;
+}
+
 /* Utility */
 .visually-hidden {
   position: absolute;

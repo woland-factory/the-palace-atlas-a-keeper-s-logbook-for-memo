@@ -31,6 +31,23 @@
     sans-serif;
 
   --max-width: 780px;
+
+  /* Health bands, good to failing, validated against the parchment surfaces
+     (dataviz palette validator + WCAG): marker fill, the number ink that keeps
+     >= 4.5:1 on that fill, and a text shade that keeps >= 4.5:1 on cards. */
+  --health-sharp: #0e6f3c;
+  --health-holding: #d09200;
+  --health-fading: #c34e1e;
+  --health-atrisk: #a92626;
+  --health-unwalked: #8a8272;
+  --health-sharp-ink: #ffffff;
+  --health-holding-ink: #23201a;
+  --health-fading-ink: #ffffff;
+  --health-atrisk-ink: #ffffff;
+  --health-sharp-text: #0e6f3c;
+  --health-holding-text: #8a6400;
+  --health-fading-text: #b4471a;
+  --health-atrisk-text: #a92626;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,5 +64,19 @@
     --color-danger: #e08a7f;
     --color-focus: #7cb0e8;
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+
+    --health-sharp: #2f9e44;
+    --health-holding: #c1860a;
+    --health-fading: #bf4d15;
+    --health-atrisk: #e06666;
+    --health-unwalked: #7d7566;
+    --health-sharp-ink: #1c1a16;
+    --health-holding-ink: #1c1a16;
+    --health-fading-ink: #ffffff;
+    --health-atrisk-ink: #1c1a16;
+    --health-sharp-text: #2f9e44;
+    --health-holding-text: #c1860a;
+    --health-fading-text: #e0703a;
+    --health-atrisk-text: #e06666;
   }
 }
