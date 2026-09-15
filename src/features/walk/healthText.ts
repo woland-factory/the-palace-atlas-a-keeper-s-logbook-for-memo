@@ -19,3 +19,14 @@ export function formatDue(iso: string): string {
     day: "numeric",
   })}`;
 }
+
+// The palace card's schedule line, from palaceHealth's nextDue.
+export function formatNextWalk(nextDue: string | null, now: Date): string {
+  if (!nextDue) return HEALTH_TEXT.unwalked;
+  const due = new Date(nextDue);
+  if (due.getTime() <= now.getTime()) return "Walk due now";
+  return `Next walk ${due.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })}`;
+}
