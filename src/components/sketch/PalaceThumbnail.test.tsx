@@ -32,11 +32,26 @@ describe("PalaceCard", () => {
     const { getByRole } = render(
       <MemoryRouter>
         <ul>
-          <PalaceCard palace={palace} onRename={() => {}} onDelete={() => {}} />
+          <PalaceCard
+            palace={palace}
+            now={new Date()}
+            onRename={() => {}}
+            onDelete={() => {}}
+          />
         </ul>
       </MemoryRouter>,
     );
     const link = getByRole("link", { name: "Childhood home" });
     expect(link).toHaveAttribute("href", `/palace/${palace.id}`);
+  });
+});
+
+describe("PalaceThumbnail health", () => {
+  it("colors each thumbnail spot by its health band when now is given", () => {
+    const { container } = render(
+      <PalaceThumbnail palace={drawn()} now={new Date()} />,
+    );
+    const banded = container.querySelectorAll('[data-health="unwalked"]');
+    expect(banded).toHaveLength(3);
   });
 });

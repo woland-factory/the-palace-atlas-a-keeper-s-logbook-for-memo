@@ -1,5 +1,15 @@
-import { useEffect, useRef, type PointerEvent, type WheelEvent, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type PointerEvent,
+  type WheelEvent,
+  type KeyboardEvent,
+} from "react";
 import type { Palace } from "../../model/atlas";
+import { spotHealth, type HealthLabel } from "../../features/walk/scheduler";
+import { HEALTH_TEXT } from "../../features/walk/healthText";
+import { HealthRing } from "../HealthRing";
 import {
   clampPointToBounds,
   clientToLogical,
@@ -27,6 +37,7 @@ const OUTLINE_MIN_STEP = 12; // logical units between sampled outline points
 
 interface Props {
   palace: Palace;
+  now: Date;
   view: View;
   onViewChange: (v: View) => void;
   onInitView: (v: View) => void;
@@ -40,6 +51,7 @@ interface Props {
 
 export function SketchSurface({
   palace,
+  now,
   view,
   onViewChange,
   onInitView,
@@ -231,6 +243,14 @@ export function SketchSurface({
   const r = bounds.w * 0.022;
   const fontSize = r * 1.15;
 
+  // One FSRS pass per (spots, now); pan/zoom only change the viewBox and must
+  // never recompute health. Color itself is pure CSS off data-health.
+  const healthById = useMemo(() => {
+    const map = new Map<string, HealthLabel>();
+    for (const s of spots) map.set(s.id, spotHealth(s.fsrs, now).label);
+    return map;
+  }, [spots, now]);
+
   return (
     <svg
       ref={svgRef}
@@ -258,21 +278,24 @@ export function SketchSurface({
       )}
       {spots.map((s) => {
         const selected = s.id === selectedSpotId;
+        const health = healthById.get(s.id) ?? "unwalked";
         return (
           <g
             key={s.id}
             className={`spot${selected ? " spot--selected" : ""}`}
             data-spot-id={s.id}
+            data-health={health}
             role="button"
             tabIndex={0}
             aria-pressed={selected}
-            aria-label={spotAccessibleName(s.order, s.label)}
+            aria-label={`${spotAccessibleName(s.order, s.label)}, ${HEALTH_TEXT[health]}`}
             onKeyDown={(e) => onSpotKeyDown(e, s.id)}
           >
             {selected && (
-              <circle cx={s.x} cy={s.y} r={r * 1.5} className="spot__ring" fill="none" />
+              <circle cx={s.x} cy={s.y} r={r * 1.95} className="spot__ring" fill="none" />
             )}
             <circle cx={s.x} cy={s.y} r={r} className="spot__marker" />
+            <HealthRing label={health} cx={s.x} cy={s.y} r={r} />
             <text
               x={s.x}
               y={s.y}

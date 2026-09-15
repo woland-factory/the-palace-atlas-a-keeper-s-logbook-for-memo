@@ -9,7 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { newAtlas, newPalace, type Atlas, type Palace } from "../model/atlas";
-import { loadAtlas } from "../persistence/atlasStore";
+import { loadAtlasOrSeedDemo } from "../persistence/atlasStore";
+import { getRuntimeConfig } from "../config/runtimeConfig";
 import { Autosaver, type SaveStatus } from "../persistence/autosave";
 
 export interface AtlasContextValue {
@@ -45,10 +46,12 @@ export function AtlasProvider({
     return saverRef.current.subscribe(setSaveStatus);
   }, []);
 
-  // Initial load. Do not write on read.
+  // Initial load. Reads never write; the one exception is the first boot of a
+  // demo-seeded deployment, which persists the sample so it behaves like the
+  // keeper's own data afterwards.
   useEffect(() => {
     let cancelled = false;
-    loadAtlas()
+    loadAtlasOrSeedDemo({ seedDemo: getRuntimeConfig().seedDemo, now: new Date() })
       .then((loaded) => {
         if (!cancelled) setAtlas(loaded);
       })

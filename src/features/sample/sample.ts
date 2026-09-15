@@ -1,4 +1,5 @@
 import { SCHEMA_VERSION, type Atlas, type Spot } from "../../model/atlas";
+import { DEMO_PALACE_ID } from "./demoSeed";
 
 // Inert fsrs values so a sample spot is a valid Spot. Scheduling is a later EPIC.
 function sampleSpot(
@@ -76,6 +77,12 @@ const SAMPLE_ATLAS: Atlas = {
 
 // Palace ids used by the sample, so the UI can label sample content.
 export const SAMPLE_PALACE_IDS = SAMPLE_ATLAS.palaces.map((p) => p.id);
+
+// True for any bundled sample palace: the manual sample pair and the seeded
+// demo. The card's Sample tag and the one-action removal both key off this.
+export function isSamplePalace(id: string): boolean {
+  return SAMPLE_PALACE_IDS.includes(id) || id === DEMO_PALACE_ID;
+}
 
 export function getSampleAtlas(): Atlas {
   return structuredClone(SAMPLE_ATLAS);

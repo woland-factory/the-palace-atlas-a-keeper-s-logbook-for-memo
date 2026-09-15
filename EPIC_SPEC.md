@@ -1,36 +1,38 @@
-# EPIC SPEC — Foundation & the empty atlas
+# EPIC SPEC — The living heat map & the schedule
 
-The first EPIC of The Palace Atlas. It builds the skeleton every later EPIC
-stands on: the app scaffold, the `Atlas` data model, an IndexedDB
-persistence layer with autosave, the estate overview with a designed empty
-state, whole-atlas export/import with validation, the staging deploy
-scaffold, error/analytics wiring, and a README for strangers.
+This EPIC delivers the product's signature moment: the floor plan the keeper
+drew glows where recall is failing. It paints each spot's FSRS health as color
+directly on the plan, surfaces per-palace overall health and next-walk date on
+the estate overview, leads the keeper to the palace most at risk, and seeds a
+demo palace with real walk history so the heat map is visible on staging within
+a minute of first load without hand input.
 
-This EPIC ships NO drawing surface, NO recall walk, and NO heat map. Those
-are EPICs 2, 3, and 4. Read the Non-Goals section before writing any code.
+Everything the heat map needs already exists and is untouched by earlier EPICs:
+the FSRS seam (`src/features/walk/scheduler.ts`) exposes a 0–1 `retrievability`,
+five labeled `HealthLabel` bands with fixed thresholds, `spotHealth`, and the
+`data-health` render hooks in the spot list and walk summary. This EPIC adds the
+color layer, the palace-level aggregates (overall health + earliest-due next
+walk, which do not exist yet), the overview at-risk lead, and the `SEED_DEMO`
+auto-seed. **No data-model or schema change. `SCHEMA_VERSION` stays `1`. No
+migration is added this EPIC.**
 
 ---
 
 ## Quality differentiator (hold every relevant decision to this)
 
-**Decay you can read at a glance.** Every competitor shows a list, a streak,
-or a schedule. This app colors the floor plan the keeper drew so the spots
-their memory is losing are obvious in one look.
+**Decay you can read at a glance.** Every competitor shows a list, a streak, or
+a schedule. This app colors the floor plan the keeper drew so the spots their
+memory is losing are obvious in one look.
 
-**What it demands of THIS EPIC:** the signature moment does not render here.
-This EPIC's job is to make it *possible and inevitable* later. Two things
-carry the burden:
-
-1. The `Atlas` data model must store, per spot, the exact per-spot decay
-   state (`fsrs`) that EPIC 4 will color the plan from, and it must survive
-   reload and a full export/import round-trip losslessly. If this EPIC drops
-   or lossily serializes per-spot state, the heat map has nothing honest to
-   read. Round-trip fidelity is the differentiator's foundation, not a
-   nicety.
-2. The estate overview is the frame the glowing plan will hang in. Build it
-   so a palace card has an obvious slot for the mini-plan thumbnail and a
-   health summary (EPIC 2 and EPIC 4 fill them). Do not paint yourself into
-   a layout that cannot show health at a glance.
+**What it demands of THIS EPIC:** this is the EPIC where the differentiator
+ships or fails. The reading must be **instant** (color is CSS keyed off a
+pre-computed health map, so a plan of dozens of spots pans and zooms with no
+recompute), **honest** (color comes straight from `spotHealth`/`retrievability`;
+an unwalked spot is neutral, never a faked score), and **unmistakable** (the
+worst spots read as failing at a glance, and the color is never the only signal:
+each spot also carries a shape/pattern, a number, an accessible health word, and
+a legend). If the plan does not visibly glow red where memory is dying, the EPIC
+has not shipped, regardless of passing tests.
 
 ---
 
@@ -38,484 +40,496 @@ carry the burden:
 
 ### In scope
 
-- React + TypeScript + Vite single-page app with a client-side router.
-- The `Atlas` / `Palace` / `Spot` / `Walk` TypeScript data model and a
-  `SCHEMA_VERSION` constant, plus a forward-only migration framework.
-- An IndexedDB persistence layer holding one `Atlas` record, with debounced
-  autosave and a visible save-status indicator.
-- The estate overview screen (`/`) rendering palace cards, with a designed
-  empty state.
-- Minimal palace **create / read / update / delete as data records**: name a
-  new palace, rename it, delete it. No drawing surface (EPIC 2). This exists
-  only to prove the persistence criterion and to give the overview real
-  content.
-- A settings/data screen (`/settings`): export the atlas, import an atlas,
-  load the bundled sample, clear the sample.
-- Whole-atlas export to one versioned JSON file, and import back with strict
-  validation (malformed JSON, wrong/missing `schemaVersion`, oversize file).
-- A bundled sample atlas fixture and a one-action "Load sample".
-- Runtime env plumbing for `SENTRY_DSN`, `UMAMI_URL`, `UMAMI_WEBSITE_ID`,
-  `SEED_DEMO` via a container-start-generated `env.js` (never baked into the
-  bundle, never committed).
-- Sentry (frontend errors) and Umami (analytics) wiring that no-ops when its
-  env is unset and never sends spot contents or PII.
-- A multi-stage `Dockerfile`, `nginx.conf`, entrypoint script, and
-  `docker-compose.staging.yml` that build and serve the static app.
-- `.env.example`, a README written for strangers, and the Vitest test suite.
+- **Per-spot color on the drawn plan.** Color every spot marker on the palace
+  view plan (`SketchSurface`) by its current `HealthLabel`, driven by
+  `spotHealth(spot.fsrs, now)`. Color updates immediately after a walk. Color is
+  never the only signal (band-specific marker shape/outline pattern, the spot
+  number, the health word in the accessible name, and an on-plan legend).
+- **Health color tokens + legend.** A five-band health scale as CSS design
+  tokens (light and dark), validated for contrast against the app's parchment
+  surfaces, and a compact `HealthLegend` that reads without relying on color
+  alone.
+- **Palace-level aggregates (new code).** A pure `palaceHealth(palace, now)`
+  giving overall health (the worst walked spot governs), the earliest-due
+  next-walk date, and counts; plus `sortByRisk` / `mostAtRisk` helpers. Nothing
+  like this exists yet.
+- **Estate overview health.** Each `PalaceCard` shows its overall health and its
+  next-walk date, and its thumbnail glows by health. The overview orders palaces
+  so the most-at-risk one is first and flags it with a "Walk next" chip.
+- **Immediate post-walk payoff.** The walk summary shows the just-updated plan,
+  glowing, so the keeper sees the walk reflected before leaving the walk screen.
+- **`SEED_DEMO` auto-seed (new code).** On first boot only, when `SEED_DEMO` is
+  on and no atlas is stored yet, seed one demo palace carrying real walk history
+  so its plan glows with a mix of healthy and failing spots. It is clearly
+  labeled a sample and removable in one action, and never re-seeds after removal.
+- **README + copy sweep** for the shipped heat map, next-walk schedule, and
+  `SEED_DEMO` behavior.
 
-### Out of scope (this EPIC only — later EPICs own these)
+### Out of scope (this EPIC only — do not build)
 
-- The SVG sketcher / drawing surface, placing dots, paths, outlines, spot
-  labels and contents editing (EPIC 2).
-- The mini-plan thumbnail rendering (EPIC 2 fills the card's reserved slot).
-- The recall walk and the FSRS scoring engine that mutates `fsrs` state
-  (EPIC 3). This EPIC only *stores and round-trips* the `fsrs` field; it
-  never computes or updates it.
-- The living heat map, per-spot color, next-walk ordering on the overview,
-  and the `SEED_DEMO` auto-seed-on-first-load behavior (EPIC 4). This EPIC
-  *reads* `SEED_DEMO` into runtime config but does not act on it beyond the
-  no-op default.
-- The guided first-run walkthrough (EPIC 5).
+- **No data-model, schema, migration, or persistence-format change.** The
+  `fsrs` block and `walks` history already store everything. Do not touch
+  `src/model/atlas.ts` types, `SCHEMA_VERSION`, `migrate.ts`, `validate.ts`, or
+  the IndexedDB store shape.
+- **No change to the FSRS math or thresholds.** Reuse `scheduler.ts` exactly:
+  `retrievability`, `bandFor`, `spotHealth`, `HEALTH_THRESHOLDS`. Do not add a
+  second retrievability path or re-tune the bands.
+- **No coloring of the in-progress walk plan.** During an active walk,
+  `WalkPlan` keeps its current active-spot focus and stays uncolored, so the
+  keeper is not biased about which spots are "red" while testing recall. The
+  glow lands on the summary and the palace view.
+- **No change to the existing manual "Load the sample" fixture or behavior**
+  (`getSampleAtlas`, the two walk-less sample palaces). The required glowing
+  sample is the `SEED_DEMO` auto-seed, a distinct palace. (A follow-up may give
+  the manual sample walk history; it is not this EPIC.)
+- **No walk-history editing, no walk log/detail screen, no export/import
+  changes.**
 
 ### Non-goals (binding — building any of these is a defect)
 
-- No accounts, login, cloud sync, or server-stored/multi-user data. There is
-  no backend and no server route in this EPIC.
-- No secrets committed to the git tree.
-- No LLM features of any kind, including bring-your-own-key.
-- No gamification, sharing, template palaces beyond the one sample, or CAD
-  drawing tools.
+- **No cross-palace daily-round medley.**
+- **No pre-built template palaces beyond the single seeded demo.**
+- **No streak, calendar, or habit analytics of the user's activity.** Health is
+  about the palace, not the habit. Do not add "days practiced", "current
+  streak", "walks this week", or any activity chart.
 
 ---
 
-## Quality bar mapping (how the written bar applies to a phased EPIC 1)
+## Quality bar mapping (how the written bar applies here)
 
-The bar is binding spec. Because this is the first of six EPICs, three bar
-clauses are met by later EPICs by design. State this honestly; do not build
-them here (that is drift) and do not skip what IS owed here.
-
-- **§4 First-run "walk the first success"** is EPIC 5. **The seeded glowing
-  demo** (`SEED_DEMO` auto-seed) is EPIC 4. EPIC 1's first-run contribution
-  is a designed empty state with one obvious primary action plus a working
-  "Load sample" so the first screen is never blank and the core direction is
-  clear. Do not build a guided walkthrough in this EPIC.
-- **§1 Perceived speed, §2 Mobile-first, §3 Designed states, §5 Security
-  hygiene, §6 Accessibility, §7 Radically simple, §8 Human-voice copy, §9
-  README** all apply fully to every screen this EPIC ships.
-- **§5 Security** for a no-backend app maps to: import is the only untrusted
-  boundary, so it is size-capped, schema-validated, and version-checked
-  before it touches storage; secrets are env-only; no PII (spot contents) in
-  logs or error reports. There are no server routes to authorize; if a later
-  EPIC adds one it gets full authz.
+- **§1 Perceived speed.** The heat reads on first render. Compute a single `now`
+  per view and memoize the per-spot health map so pan/zoom (which only change the
+  SVG `viewBox`) trigger zero FSRS recompute; color is pure CSS off
+  `data-health`. A plan at the 200-spot cap must pan smoothly. No new hot-path
+  work per frame.
+- **§2 Mobile-first.** The glowing plan, the legend, the card health chips, and
+  the "Walk next" lead are all fully usable and readable at 390px with no
+  horizontal scroll. The legend wraps or compacts; it never forces overflow.
+- **§3 Designed states.** A palace with spots but no walk yet reads "Not walked
+  yet" with neutral markers, not a fake glow. A palace with zero spots shows no
+  health chip (its card invites drawing). The overview with no walked palace
+  shows no "Walk next" lead, not an empty banner.
+- **§4 First-run / staging.** `SEED_DEMO` is already hardcoded `"1"` in
+  `docker-compose.staging.yml`, so once the seed builder exists staging shows the
+  glowing demo within a minute with zero input. (The guided walkthrough is a
+  separate EPIC and already ships; do not add another.)
+- **§5 Security.** No backend, no new route. The only new persisted content is
+  the demo atlas, which contains no secrets and no real PII. Never log or send
+  spot `contents`/`label`; the seed and health code must not add any Sentry/Umami
+  payload carrying spot text.
+- **§6 Accessibility.** Health color meets contrast against the parchment
+  surfaces; the marker number stays legible on every band; each spot's health is
+  conveyed by shape/pattern + accessible word + legend, never color alone; the
+  legend and chips keep visible focus/semantics; keyboard reaches everything.
+- **§7 Radically simple.** The plan is the product. No paragraphs explaining the
+  colors. The legend is a compact key, the card chip is a few words, the lead is
+  a chip plus one primary action.
+- **§8 Human-voice copy.** Every new string is swept (no `—`/`–`, no banned LLM
+  vocabulary, positive/direct phrasing). Reuse the existing band words in
+  `HEALTH_TEXT`.
+- **§9 README.** Update the README so the heat map and schedule are described as
+  shipped, and `SEED_DEMO` is documented as the staging demo seed (no factory
+  internals).
 
 ---
 
 ## Technical design
 
-### Stack and dependencies (keep the list small and pinned)
+### Reused building blocks (do not modify)
 
-- `react`, `react-dom`, `react-router-dom` (client-side routing).
-- `vite`, `@vitejs/plugin-react`, `typescript`.
-- `idb` (MIT, tiny) for the IndexedDB wrapper. Hand-rolling is acceptable if
-  the implementer prefers, but do not add a heavier storage library.
-- `@sentry/react` for frontend error tracking.
-- Dev/test: `vitest`, `@testing-library/react`, `@testing-library/user-event`,
-  `jsdom`, `fake-indexeddb`.
-- Pin every dependency to an exact version. No state-management library, no
-  UI-component library, no CSS framework — plain CSS with design tokens is
-  enough for these screens.
+- `src/features/walk/scheduler.ts` — `retrievability(f, now): number | null`
+  (0–1, `null` when never walked), `bandFor(r): HealthLabel`,
+  `spotHealth(f, now): { retrievability, label, due }`, `HealthLabel =
+  "unwalked" | "sharp" | "holding" | "fading" | "atRisk"`, `HEALTH_THRESHOLDS =
+  { sharp: 0.9, holding: 0.7, fading: 0.5 }`.
+- `src/features/walk/healthText.ts` — `HEALTH_TEXT` (`unwalked: "Not walked
+  yet"`, `sharp: "Sharp"`, `holding: "Holding"`, `fading: "Fading"`, `atRisk:
+  "At risk"`), `formatDue(iso)`.
+- `src/features/walk/walkSession.ts` — `assembleCompletedWalk(palace, results,
+  startedAt, completedAt, walkId?)` (the atomic end-of-walk transform; reuse it
+  to build the demo's real walk history).
+- `src/features/sketch/geometry.ts` — `spotsPathD`, `outlinePathD`,
+  `thumbnailViewBox`, `MAX_SPOTS = 200`, `Point`.
+- Spot geometry: logical `x,y` in `viewBox` space (default 1000×1000).
 
-### File / module layout
+### New / changed files
 
 ```
-index.html
-package.json  tsconfig.json  vite.config.ts  .dockerignore  .env.example
-public/
-  env.js                       # dev placeholder: window.__ENV__ = {} (all empty, no secrets)
-src/
-  main.tsx                     # mount, init observability, wrap in ErrorBoundary + AtlasProvider
-  App.tsx                      # <BrowserRouter> + routes + app shell (header)
-  config/
-    runtimeConfig.ts           # read window.__ENV__ with safe empty defaults
-  model/
-    atlas.ts                   # Atlas/Palace/Spot/Walk types, SCHEMA_VERSION, factories, ids
-    validate.ts                # validateImport(unknown, byteSize): Ok<Atlas> | Err<reason>
-    migrate.ts                 # migrate(atlas): Atlas — forward-only version steppers
-  persistence/
-    db.ts                      # openDB, low-level get/put for the single atlas record
-    atlasStore.ts              # loadAtlas(), saveAtlas(atlas) — the persistence API
-    autosave.ts                # debounce + SaveStatus ('idle'|'saving'|'saved'|'error')
-  state/
-    AtlasContext.tsx           # provider: current atlas + actions + save status
-  features/
-    portability/
-      exportAtlas.ts           # buildExport(atlas) + downloadAtlas(atlas)
-      importAtlas.ts           # readAndImport(file): Promise<Ok|Err> (uses validate.ts)
-    sample/
-      sample.ts                # SAMPLE_ATLAS fixture + loadSample()
-  routes/
-    EstateOverview.tsx         # "/"
-    Settings.tsx               # "/settings"
-    NotFound.tsx               # "*"
-  components/
-    AppHeader.tsx  EmptyState.tsx  PalaceCard.tsx  NewPalaceForm.tsx
-    SaveStatus.tsx  Toast.tsx  ErrorBoundary.tsx  ConfirmDialog.tsx
-  styles/
-    tokens.css  global.css
-docker/
-  Dockerfile
-  nginx.conf
-  docker-entrypoint.sh
-docker-compose.staging.yml
-README.md
+src/features/walk/
+  palaceHealth.ts            # NEW: palaceHealth(), mostAtRisk(), sortByRisk()
+  palaceHealth.test.ts       # NEW
+  healthText.ts              # CHANGED: add formatNextWalk()
+src/features/sample/
+  demoSeed.ts                # NEW: buildDemoAtlas(now), DEMO_PALACE_ID, patterns
+  demoSeed.test.ts           # NEW
+  sample.ts                  # CHANGED: export isSamplePalace(id) covering demo id
+src/persistence/
+  atlasStore.ts              # CHANGED: loadAtlasOrSeedDemo({seedDemo, now})
+  atlasStore.test.ts         # CHANGED: seed-once behavior
+src/state/
+  AtlasContext.tsx           # CHANGED: initial load calls loadAtlasOrSeedDemo
+components/
+  HealthLegend.tsx           # NEW: the color+shape+word key
+  HealthLegend.test.tsx      # NEW
+  PalaceCard.tsx             # CHANGED: real health chip + next-walk + glow thumb
+  sketch/SketchSurface.tsx   # CHANGED: color markers by health + pattern + a11y
+  sketch/PalaceThumbnail.tsx # CHANGED: color spots by health
+  walk/WalkPlan.tsx          # CHANGED: optional showHealth+now (summary payoff)
+  walk/WalkSummary.tsx       # CHANGED: render the glowing plan
+routes/
+  EstateOverview.tsx         # CHANGED: sortByRisk + "Walk next" lead + pass now
+  PalaceEditor.tsx           # CHANGED: capture now once; show HealthLegend
+styles/
+  tokens.css                 # CHANGED: health color tokens (light + dark)
+  global.css                 # CHANGED: [data-health] rules, legend, chip
+README.md                    # CHANGED
 ```
 
-### Data model (`src/model/atlas.ts`) — the forward-only contract
+### Palace-level health (`src/features/walk/palaceHealth.ts`) — new, pure
 
-The persisted and exported root object is exactly this. Define the full
-model now even though only names/ids are edited in this EPIC, because export
-and IndexedDB must store the whole thing losslessly for later EPICs.
+Every function takes explicit `now: Date` (deterministic tests), reuses
+`spotHealth`, and never fabricates a number for an unwalked spot.
 
 ```ts
-export const SCHEMA_VERSION = 1 as const;
-
-export interface Atlas {
-  schemaVersion: number;      // === SCHEMA_VERSION for freshly created atlases
-  exportedAt: string | null;  // ISO string, stamped only at export; null in storage
-  palaces: Palace[];
+export interface PalaceHealth {
+  overall: HealthLabel;          // worst walked spot's band; "unwalked" if none walked
+  worstRetrievability: number | null; // min retrievability among walked spots; null if none
+  nextDue: string | null;        // earliest due ISO among walked spots; null if none
+  spotCount: number;
+  walkedCount: number;           // spots with retrievability !== null
+  atRiskCount: number;           // spots whose band is "atRisk"
 }
 
-export interface Palace {
-  id: string;                 // uuid
-  name: string;
-  createdAt: string;          // ISO
-  viewBox: { w: number; h: number };   // logical drawing size; default { w: 1000, h: 1000 }
-  outline?: Path[];           // optional room shapes; EPIC 2 writes these
-  spots: Spot[];              // ordered; index === walk order; [] in this EPIC
-  walks: Walk[];              // append-only history; [] in this EPIC
+export function palaceHealth(palace: Palace, now: Date): PalaceHealth;
+```
+
+Rules:
+- Compute `spotHealth(s.fsrs, now)` for every spot.
+- `walked` = spots whose `retrievability !== null`.
+- `nextDue` = the earliest (min ISO) `due` among `walked`; `null` if none walked.
+  **This is the "next-walk date = earliest spot due date."** It is derived, not
+  stored, so it recomputes on every render and therefore after each walk.
+- `worstRetrievability` = min `retrievability` among `walked`; `null` if none.
+- `overall` = `bandFor(worstRetrievability)` when any spot is walked, else
+  `"unwalked"`. (Deliberately: never-walked spots do not fabricate a due date or
+  a score, matching `spotHealth`'s contract. Do not "fix" this by treating a
+  fresh spot's placeholder `due` as a real schedule.)
+- `atRiskCount` = count of spots whose band is `"atRisk"`.
+
+```ts
+// Palaces sorted most-at-risk first. Walked palaces order by ascending
+// worstRetrievability (lower = worse), tiebreak by earliest nextDue, then name.
+// Palaces with no walked spot sort after all walked ones, by name. Stable.
+export function sortByRisk(palaces: Palace[], now: Date): Palace[];
+
+// The single most-at-risk palace (first of sortByRisk that has a walked spot),
+// or null when no palace has been walked.
+export function mostAtRisk(palaces: Palace[], now: Date): Palace | null;
+```
+
+`healthText.ts` gains one display helper (keep display strings here):
+
+```ts
+// "Walk due now" when nextDue is at/earlier than now; "Next walk Oct 2"
+// otherwise; "Not walked yet" when nextDue is null.
+export function formatNextWalk(nextDue: string | null, now: Date): string;
+```
+
+### The health color scale (tokens + legend)
+
+Map the five bands to a good→failing ramp so failing spots read as heat. Add
+tokens to `tokens.css` for both modes; the marker uses the band fill, and the
+`data-health` value selects it. **Starting values (from the validated dataviz
+status palette; the implementer MUST re-run the palette validator against the
+app's parchment surfaces — light `#f6f3ec`, dark `#262320` — and adjust any step
+that fails the lightness/chroma/CVD/contrast checks):**
+
+```css
+:root {
+  --health-sharp:   #0ca30c; /* good     */
+  --health-holding: #d98a00; /* warning  */
+  --health-fading:  #e06a2c; /* serious  */
+  --health-atrisk:  #cc3b3b; /* critical */
+  --health-unwalked:#8a8272; /* neutral, reads as "no reading yet" */
 }
-
-export interface Path { points: { x: number; y: number }[]; }
-
-export interface Spot {
-  id: string;
-  order: number;
-  x: number; y: number;
-  label: string;
-  contents: string;           // memorized material — PII-sensitive, never logged/sent
-  fsrs: {
-    stability: number; difficulty: number;
-    due: string;                // ISO
-    lastReview?: string;        // ISO
-    reps: number; lapses: number; state: number;
-  };
-}
-
-export interface Walk {
-  id: string;
-  palaceId: string;
-  startedAt: string; completedAt: string;
-  results: { spotId: string; grade: 'missed' | 'shaky' | 'sharp' }[];
+@media (prefers-color-scheme: dark) {
+  :root {
+    --health-sharp:   #3fbf4a;
+    --health-holding: #e7a52a;
+    --health-fading:  #e88a55;
+    --health-atrisk:  #e06b63;
+    --health-unwalked:#7d7566;
+  }
 }
 ```
 
-Factories: `newAtlas(): Atlas` returns `{ schemaVersion: SCHEMA_VERSION,
-exportedAt: null, palaces: [] }`. `newPalace(name: string): Palace` returns a
-palace with a fresh uuid, `createdAt` now, default `viewBox`, and empty
-`spots`/`walks`. Generate ids with `crypto.randomUUID()`.
+Non-color redundancy (all required, so the reading never depends on hue alone):
+- **Shape / pattern per band on the plan.** Healthy bands (`sharp`, `holding`)
+  render a solid marker outline; failing bands (`fading`, `atRisk`) render a
+  distinct outline treatment that reads in grayscale and under CVD (for example
+  `fading` a dashed ring, `atRisk` a heavier double/halo ring); `unwalked`
+  renders a light hollow marker. Pattern is driven by `data-health`, so it is
+  testable and needs no color.
+- **The spot number stays on every marker** (identity, not health) and must keep
+  ≥ 4.5:1 contrast against its marker fill in both modes. Give the marker a 2px
+  surface ring (parchment-colored) separating fill from the connecting path, and
+  choose the number ink per band so it always clears contrast (dark ink on the
+  amber `holding` step; light ink on the darker green/orange/red steps). Do not
+  let the number wash out on any band.
+- **Accessible word.** Each interactive spot `<g>`'s `aria-label` includes the
+  health word, e.g. `Spot 3, Kitchen table, At risk`.
+- **Legend.** `HealthLegend` lists the five bands, each row a color swatch **plus
+  its shape/pattern plus its word** (reuse `HEALTH_TEXT`). It reads with color
+  removed. Compact enough for 390px (wraps, no overflow).
 
-**Migration framework (`migrate.ts`), forward-only.** `migrate(raw): Atlas`
-reads `raw.schemaVersion` and applies an ordered chain of pure stepper
-functions `vN -> vN+1` until it reaches `SCHEMA_VERSION`. For v1 the chain is
-empty (identity), but the structure must exist so a future v2 adds one
-stepper without touching call sites. Never mutate downward: an atlas whose
-`schemaVersion > SCHEMA_VERSION` is unmigratable and is rejected at import.
+`HealthLegend` renders on the palace view (`PalaceEditor`, near the plan) and on
+the walk summary. Keep it small; it is a key, not an essay.
 
-### Persistence (`src/persistence/`)
+### Coloring the surfaces
 
-- IndexedDB database name `palace-atlas`, version `1`, one object store
-  `atlas`. Store the single current atlas under the fixed key `"current"`.
-- `loadAtlas(): Promise<Atlas>` — read key `"current"`; if absent, return
-  `newAtlas()` (do not write on read). If present, run it through `migrate()`
-  before returning.
-- `saveAtlas(atlas: Atlas): Promise<void>` — write the whole atlas under
-  `"current"`. Storage always holds `exportedAt: null`; `exportedAt` is a
-  property of an exported *file*, stamped in `buildExport`, never persisted.
-- **Autosave (`autosave.ts`):** every mutation through `AtlasContext` marks
-  the store dirty and schedules a debounced save (300–500ms). Additionally
-  flush pending saves on `visibilitychange` (hidden) and `beforeunload` so a
-  quick edit-then-close never loses data. Expose `SaveStatus`
-  (`'idle' | 'saving' | 'saved' | 'error'`) for the indicator. On a rejected
-  write, set `'error'` and surface the copy in §Designed states.
+- **`SketchSurface` (palace view plan — the signature surface).** For each spot,
+  compute `spotHealth(s.fsrs, now)` and set `data-health={label}` on the spot
+  `<g>` (and/or its `spot__marker`). CSS colors the marker fill from the band
+  token and applies the band pattern. Include the health word in the existing
+  `spotAccessibleName`-based `aria-label`. Capture `now` once and memoize the
+  per-spot health map (`useMemo` keyed on `spots` + `now`) so pan/zoom do not
+  recompute FSRS. Editing a spot (place/move/rename) keeps working; a newly
+  placed, unwalked spot shows the neutral `unwalked` marker.
+- **`PalaceThumbnail` (overview card mini-plan).** Accept `now` and color each
+  thumbnail spot circle by `spotHealth` via `data-health`. This is what makes the
+  estate readable at a glance. Keep it cheap (no interactivity, no legend).
+- **`WalkPlan` (reused for the summary payoff).** Add optional props `showHealth?:
+  boolean` and `now?: Date`. When `showHealth` is true, color spots by
+  `spotHealth` with `data-health` (no active-spot highlight needed). When absent
+  (the in-progress walk), behavior is unchanged and uncolored.
+- **`WalkSummary`.** Render `<WalkPlan palace={palace} activeSpotId={null}
+  showHealth now={now} />` above the existing tally/list, plus a `HealthLegend`,
+  so the keeper sees the plan glow with the walk they just finished before
+  leaving. Keep the existing per-spot text list (it already carries
+  `data-health`); color its health text from the same tokens.
+- **`SpotList` / `WalkSummary` text health.** Color the existing
+  `.spot-list__health` / `.walk-summary__spot-health` text by `data-health` from
+  the band tokens so the words and the plan agree.
 
-### State (`src/state/AtlasContext.tsx`)
+### Estate overview
 
-A single React context is the app's source of truth in memory, mirrored to
-IndexedDB by autosave. Actions (all persist via autosave):
+- `PalaceCard`: replace the hardcoded `Not walked yet` line with real output
+  from `palaceHealth(palace, now)`:
+  - Health chip: the overall band word (`HEALTH_TEXT[overall]`), colored by
+    `data-health`, reusing the existing `.palace-card__health::before` dot (now
+    tinted by band).
+  - Next-walk: `formatNextWalk(nextDue, now)` beside it (e.g. `At risk · Walk
+    due now` or `Holding · Next walk Oct 2`).
+  - When `spotCount === 0`, show no health chip (the card already reads `0
+    spots`); do not print a band for a palace with nothing drawn.
+  - Pass `now` to `PalaceThumbnail` so the mini-plan glows.
+- `EstateOverview`:
+  - Capture one `now`. Order the list with `sortByRisk(palaces, now)` so the
+    most-at-risk palace is first.
+  - Flag the top at-risk palace with a **"Walk next"** chip on its card, and give
+    that card a primary "Walk this palace" action linking to
+    `/palace/:id/walk`. When `mostAtRisk` is null (no palace walked yet), show no
+    flag and no lead — just the list.
+  - Do not duplicate the palace (flag in place; do not also render a separate
+    banner card for the same palace).
 
-- `createPalace(name)` → append `newPalace(name)`.
-- `renamePalace(id, name)` → update `name`.
-- `deletePalace(id)` → remove the palace.
-- `replaceAtlas(atlas)` → wholesale replace (used by import and load-sample);
-  writes immediately (not debounced) so an import is durable at once.
+### `SEED_DEMO` auto-seed (`src/features/sample/demoSeed.ts`)
 
-On mount, the provider calls `loadAtlas()` and holds a `loading` flag so the
-overview can show a skeleton (not a blank white screen) during the async
-read.
+Goal: on first boot on staging (`SEED_DEMO=1`, already wired), a fresh visitor
+with no data sees a real palace whose plan glows with a mix of healthy and
+failing spots, with zero hand input, clearly labeled a sample, removable in one
+action, and never re-seeded after removal.
 
-### Portability contract (`src/features/portability/`)
+`buildDemoAtlas(now: Date): Atlas` — fully deterministic given `now`:
+- One palace, `id = DEMO_PALACE_ID` (a stable constant), `name = "Corner bakery
+  (sample)"`, with an `outline` and **8 spots** (fixed ids `demo-spot-1..8`,
+  fixed logical coords, human labels/contents). Concrete, swept fixture:
 
-**Export file format** — the exact bytes written to disk:
+  | # | label | contents |
+  |---|-------|----------|
+  | 1 | Front counter | A brass bell rings twice. |
+  | 2 | Bread racks | Seven rye loaves in a row. |
+  | 3 | Coffee machine | Steam curls into the letter S. |
+  | 4 | Chalkboard menu | Today's number is twelve. |
+  | 5 | Window seat | A grey cat sleeps in the sun. |
+  | 6 | Back kitchen | Three copper pots hang by size. |
+  | 7 | Storeroom | A blue crate holds nine apples. |
+  | 8 | Side door | The key turns the wrong way once. |
 
-```json
-{ "schemaVersion": 1, "exportedAt": "2026-09-10T12:34:56.789Z", "palaces": [ /* full Palace[] */ ] }
+- **Real walk history that produces the band spread honestly.** Do NOT
+  hand-write `fsrs` values. Replay a fixed set of past walk sessions through the
+  production transform `assembleCompletedWalk`, so the demo carries genuine
+  `walks` records and genuine advanced `fsrs`, and the whole thing round-trips.
+  - Sessions at `now − {40, 25, 12, 4}` days (fixed offsets; `startedAt`/
+    `completedAt` derived from `now`; fixed deterministic `walkId`s).
+  - A per-spot grade pattern across the four sessions, chosen so that at `now`
+    the spots span the bands. Strong spots graded `sharp` repeatedly build high
+    stability and stay `sharp`/`holding`; weak spots graded `missed`/`shaky`
+    stay low and land `fading`/`atRisk` even though last reviewed the same day.
+    Suggested patterns (tune to hit the spread; the test asserts it):
+    - spots 1–2: `[sharp, sharp, sharp, sharp]`
+    - spots 3–4: `[sharp, shaky, sharp, shaky]`
+    - spots 5–6: `[shaky, shaky, missed, shaky]`
+    - spots 7–8: `[missed, shaky, missed, missed]`
+  - Fold chronologically: for each session build `results` for all spots and call
+    `assembleCompletedWalk`, threading the returned palace forward.
+- Wrap the palace in a valid `Atlas` (`schemaVersion: SCHEMA_VERSION,
+  exportedAt: null`).
+- **Guarantee (asserted by test):** evaluated at the seed `now`, at least one
+  spot is in `{sharp, holding}` and at least one is in `{fading, atRisk}`, and
+  not all spots share one band. Because everything is relative to `now`, the
+  spread is invariant to the absolute date, so it holds within a minute of any
+  first load.
+
+Labeling + removal:
+- `sample.ts` exports `isSamplePalace(id)` recognizing both the manual sample ids
+  (`SAMPLE_PALACE_IDS`) and `DEMO_PALACE_ID`. `PalaceCard`'s "Sample" tag and
+  the Settings "Remove sample" action both use it, so the demo shows a "Sample"
+  tag and is cleared by the existing one-action "Remove sample" (and by the
+  card's own Delete). No new removal UI is required.
+
+Seed-once wiring (`atlasStore.ts` + `AtlasContext`):
+
+```ts
+// Seed the demo exactly once, on the very first boot, and never again.
+export async function loadAtlasOrSeedDemo(opts: {
+  seedDemo: boolean;
+  now: Date;
+}): Promise<Atlas>;
 ```
+- If an atlas record already exists → `migrate()` it and return (never seed;
+  this is why removing the demo is permanent — an empty stored record still
+  counts as "present").
+- Else if `opts.seedDemo` → `atlas = buildDemoAtlas(opts.now)`; persist it with
+  `saveAtlas` (so it is durable and behaves like the user's own data); return it.
+- Else → return `newAtlas()` **without writing** (unchanged fresh-DB behavior;
+  non-staging builds are untouched).
 
-- `buildExport(atlas)` deep-clones the current atlas, sets `schemaVersion =
-  SCHEMA_VERSION` and `exportedAt = new Date().toISOString()`.
-- `downloadAtlas(atlas)` serializes with `JSON.stringify(obj, null, 2)`,
-  builds a `Blob` (`type: application/json`), and triggers a download named
-  `palace-atlas-YYYY-MM-DD.json` (date from `exportedAt`). Revoke the object
-  URL after the click.
-- The export is byte-for-byte re-importable: exporting then importing the
-  same file yields an identical `palaces` array (this is the round-trip test).
+`AtlasContext`'s initial load calls
+`loadAtlasOrSeedDemo({ seedDemo: getRuntimeConfig().seedDemo, now: new Date() })`
+instead of `loadAtlas()`. Keep the existing "do not write on plain read"
+behavior for the non-seed path. Leave `loadAtlas` in place for existing callers/
+tests.
 
-**Import validation (`validate.ts` + `importAtlas.ts`)** — reject BEFORE
-touching storage, each with a friendly in-app message and no crash. Validate
-in this order:
+### Performance & correctness notes
 
-1. **Size cap.** Reject files larger than **25 MB** (`26_214_400` bytes)
-   using `file.size`, before reading contents.
-2. **JSON parse.** Reject a body that is not valid JSON.
-3. **Shape.** Reject if the parsed value is not an object, or `palaces` is
-   not an array.
-4. **schemaVersion.** Reject if `schemaVersion` is missing, not an integer,
-   `< 1`, or `> SCHEMA_VERSION`. (Known versions are migrated by
-   `migrate()`; only `1` exists today.)
-5. **Per-palace shape (shallow).** Reject if any palace is missing a string
-   `id` or `name`, or `spots`/`walks` is not an array. Keep this shallow;
-   deep per-spot validation is not required in this EPIC, but unknown extra
-   fields must be preserved, not stripped, so future-version files survive a
-   round trip when their `schemaVersion` is accepted.
-
-`validate.ts` returns a discriminated result:
-`{ ok: true; atlas: Atlas } | { ok: false; reason: ImportError }` where
-`ImportError` is one of `'too_large' | 'not_json' | 'bad_shape' |
-'bad_version'`. `importAtlas` maps each reason to the exact copy in
-§Designed states and calls `replaceAtlas` only on success.
-
-### Runtime config and observability
-
-Static bundles cannot read container env at build time, so inject at
-container start:
-
-- `src/config/runtimeConfig.ts` reads `window.__ENV__` (shape:
-  `{ SENTRY_DSN?, UMAMI_URL?, UMAMI_WEBSITE_ID?, SEED_DEMO? }`) and returns a
-  typed config with empty-string/undefined treated as "unset". `index.html`
-  loads `/env.js` with a plain `<script src="/env.js"></script>` BEFORE the
-  app bundle.
-- Committed `public/env.js` sets `window.__ENV__ = {}` (all unset) so `npm
-  run dev` and the built bundle run with no observability and no secrets in
-  the tree.
-- At container start, `docker-entrypoint.sh` writes a fresh
-  `/usr/share/nginx/html/env.js` from the process env
-  (`SENTRY_DSN`, `UMAMI_URL`, `UMAMI_WEBSITE_ID`, `SEED_DEMO`), then execs
-  nginx. Values absent from env become empty strings.
-- **Sentry (`observability/sentry.ts`):** `initSentry()` runs only when
-  `SENTRY_DSN` is set; otherwise it is a no-op. Configure `sendDefaultPii:
-  false`, a `beforeSend` that drops any event body beyond message + stack +
-  release, and a `beforeBreadcrumb` that drops console/DOM breadcrumbs that
-  could carry `contents`. Never attach the atlas or any spot `contents`/
-  `label` to an event. `SEED_DEMO` is read into config and otherwise unused
-  this EPIC.
-- **Umami (`observability/umami.ts`):** inject the Umami script tag only when
-  BOTH `UMAMI_URL` and `UMAMI_WEBSITE_ID` are set. Track page views only; do
-  not send any custom event carrying user text.
-
-### Docker / staging
-
-- **`docker/Dockerfile`** multi-stage: stage 1 `node:20-alpine`, `npm ci`,
-  `npm run build` → `/app/dist`. Stage 2 `nginx:1.27-alpine`, copy `dist` to
-  `/usr/share/nginx/html`, copy `nginx.conf` and `docker-entrypoint.sh`.
-  Entrypoint generates `env.js` then `exec nginx -g 'daemon off;'`.
-- **`docker/nginx.conf`** serves the static app with SPA fallback
-  (`try_files $uri /index.html`) so client routes deep-link, and must NOT
-  cache `env.js` (so redeploys pick up new config).
-- **`docker-compose.staging.yml`** builds the image, maps a port, and passes
-  `SENTRY_DSN`, `UMAMI_URL`, `UMAMI_WEBSITE_ID`, `SEED_DEMO` through
-  `environment:` (values from the host env, defaulting empty). `docker
-  compose -f docker-compose.staging.yml up` must serve the working app with
-  all four unset.
-- **`.env.example`** lists the four vars with placeholder/empty values and a
-  one-line comment each. `.env` stays untracked (add to `.gitignore`).
-
-### Screens, states, and copy
-
-Mobile-first: design at 390px, single column, `max-width` container centered
-on desktop, no horizontal scroll, tap targets ≥ 44px, visible focus rings,
-labeled inputs, semantic headings/landmarks.
-
-**Estate overview (`/`):**
-- Loading: a skeleton list holds the layout steady while `loadAtlas`
-  resolves. Never a white screen.
-- Populated: one `PalaceCard` per palace showing the name, created date, spot
-  count, a **reserved slot for the mini-plan thumbnail** (EPIC 2) and a
-  **reserved health line** (EPIC 4) rendered as neutral placeholders now
-  (e.g. "Not walked yet"), plus Rename and Delete. One primary action in the
-  header: "Add your first palace" / "Add a palace".
-- Empty state (`EmptyState.tsx`): a heading, one short line of what the
-  screen is for, one primary button "Add your first palace", and a
-  subordinate "Load the sample". No blank region.
-
-**Settings / data (`/settings`):** primary action "Export atlas"; secondary
-"Import atlas" (file picker), "Load sample", "Remove sample". Import errors
-render as a `Toast`/inline message, never a crash.
-
-**Copy (already swept for the human-voice rules — use verbatim or plainer):**
-- Empty-state heading: `Start your atlas`
-- Empty-state line: `Draw the buildings you memorize in and keep them safe outside your head.`
-- Primary button: `Add your first palace`
-- Secondary: `Load the sample`
-- Card placeholder health line: `Not walked yet`
-- Rename / Delete labels: `Rename`, `Delete`
-- Delete confirm: `Delete this palace? Its spots and history go with it.`
-- Save status: `Saving`, `Saved`, and on failure `Your last change did not save. Try again.`
-- Export button: `Export atlas`
-- Import button: `Import atlas`
-- Import error `too_large`: `That file is over 25 MB. Pick an atlas you exported from this app.`
-- Import error `not_json`: `That file is not a readable atlas. Pick an atlas you exported from this app.`
-- Import error `bad_shape`: `That file is not a readable atlas. Pick an atlas you exported from this app.`
-- Import error `bad_version`: `That atlas comes from a newer version. Update the app, then import again.`
-- Import success: `Atlas imported.`
-- Load sample / remove sample: `Load the sample`, `Remove sample`
-
-No em-dashes, no banned LLM vocabulary, positive/direct phrasing. Any new
-string added during implementation must pass the same sweep before the run
-ends.
-
-### Sample fixture (`src/features/sample/sample.ts`)
-
-A small, valid `Atlas` with one or two palaces so the overview shows real
-content on demand. Because the heat map does not exist yet, the sample does
-NOT need walk history or glowing spots (that is EPIC 4's seeded demo). Keep
-it a real, importable atlas: valid ids, `schemaVersion: 1`, palaces with a
-name and empty `spots`/`walks` is sufficient. `loadSample()` calls
-`replaceAtlas(SAMPLE_ATLAS)` (deep-cloned). The sample must be clearly a
-sample in the UI and removable with `Remove sample` in one action.
+- One `now` per view, memoized health maps; color via CSS only. A 200-spot plan
+  must pan/zoom without recomputing FSRS per frame.
+- `now` advancing in real time drifts bands honestly (that is the point). The
+  seeded spread is anchored to elapsed time, not an absolute date, so it never
+  goes stale for "within a minute of first load."
+- Coloring must not introduce any Sentry/Umami payload carrying `label` or
+  `contents`.
 
 ---
 
 ## Ordered task list (each task lists its own acceptance criteria)
 
-**T1 — Scaffold and app shell.** Vite + React + TS project, router with `/`,
-`/settings`, `*`, an `AppHeader`, `tokens.css`/`global.css`, `ErrorBoundary`
-wrapping the app. `npm ci && npm run build` succeeds; `npm run dev` serves
-the shell. First meaningful render (header + skeleton) is visible without a
-blank white flash.
+**T1 — Health color tokens + legend.** Add the five band tokens to `tokens.css`
+(light + dark), run the palette validator against the parchment surfaces and
+adjust failing steps, add `[data-health]` CSS (marker fill + band pattern, and
+text-health color), and build `HealthLegend` (swatch + pattern + word).
+- **Provable:** tokens exist for both modes; `HealthLegend` renders all five
+  bands with the exact `HEALTH_TEXT` words and a non-color shape per band; the
+  legend reads at 390px with no overflow; number/marker contrast is documented as
+  validated.
 
-**T2 — Data model and migration.** `atlas.ts` types, `SCHEMA_VERSION`,
-`newAtlas`/`newPalace`, uuid ids; `migrate.ts` forward-only framework
-(identity for v1). Types compile with `tsc --noEmit`; `migrate(newAtlas())`
-returns an equal atlas.
+**T2 — Palace-level health helpers.** `palaceHealth`, `sortByRisk`,
+`mostAtRisk`, and `formatNextWalk`.
+- **Provable:** `nextDue` equals the earliest `due` among walked spots and is
+  `null` when none walked; `overall` is the worst walked band (`"unwalked"` when
+  none walked); after a simulated walk that changes due dates, `palaceHealth`
+  returns the new earliest due; `sortByRisk` puts the lowest-retrievability
+  walked palace first and never-walked palaces last.
 
-**T3 — Persistence + autosave.** `db.ts`, `atlasStore.ts`, `autosave.ts`,
-`AtlasContext`. `loadAtlas` returns an empty atlas on a fresh DB and a
-migrated atlas when present; `saveAtlas` round-trips through IndexedDB;
-autosave debounces and flushes on hide/unload; `SaveStatus` transitions
-`saving → saved` and `→ error` on a rejected write.
-- **Provable:** create a palace, reload the page (or re-open the DB in a
-  test), the palace is still there. Rename persists. Delete persists.
+**T3 — Color the palace view plan.** Wire `data-health` + band pattern +
+accessible word into `SketchSurface`; capture one `now`; memoize the health map;
+show `HealthLegend` in `PalaceEditor`.
+- **Provable:** each spot `<g>` carries the correct `data-health`; an unwalked
+  spot is `unwalked` (neutral, no fake score); after completing a walk and
+  returning to the palace view the affected spots' `data-health` reflects the new
+  bands; editing/placing spots still works.
 
-**T4 — Estate overview + minimal CRUD.** `EstateOverview`, `PalaceCard`,
-`EmptyState`, `NewPalaceForm`, `ConfirmDialog`, `SaveStatus`. Loading
-skeleton, designed empty state with primary action + load-sample, populated
-list with rename/delete. One obvious primary action per screen.
-- **Provable:** empty state shows the exact copy and both actions; adding a
-  palace moves the screen from empty to populated; the reserved thumbnail and
-  health slots render as neutral placeholders.
+**T4 — Post-walk payoff.** Extend `WalkPlan` with `showHealth`/`now`; render the
+glowing plan + legend in `WalkSummary`; color the summary/list health text.
+- **Provable:** the summary shows a colored plan whose spot `data-health` matches
+  the just-updated `spotHealth`; the in-progress walk plan is unchanged and
+  uncolored.
 
-**T5 — Export.** `exportAtlas.ts`: `buildExport` stamps `schemaVersion` and
-`exportedAt`; `downloadAtlas` produces a single well-named JSON blob and
-revokes the URL.
-- **Provable:** `buildExport(atlas)` output has `schemaVersion === 1`, a
-  valid ISO `exportedAt`, and the full `palaces`.
+**T5 — Overview health + at-risk lead.** Real health chip + `formatNextWalk` on
+`PalaceCard`, glowing `PalaceThumbnail`, `sortByRisk` ordering, and the "Walk
+next" flag + primary action on the most-at-risk card.
+- **Provable:** each card shows its overall band and next-walk text; a 0-spot
+  palace shows no band; the thumbnail spots carry `data-health`; the most-at-risk
+  palace is first and flagged with "Walk next" and a "Walk this palace" action;
+  with no walked palace there is no flag.
 
-**T6 — Import + validation.** `validate.ts`, `importAtlas.ts`, wired into
-Settings with toasts. All five validation steps in order; success calls
-`replaceAtlas` and persists immediately.
-- **Provable:** a good file restores state; malformed JSON, missing/`>current`
-  `schemaVersion`, and a >25 MB file each return the right `ImportError` and
-  show the matching friendly message with no crash.
+**T6 — `SEED_DEMO` auto-seed.** `buildDemoAtlas`, `DEMO_PALACE_ID`,
+`isSamplePalace`, and `loadAtlasOrSeedDemo`; wire `AtlasContext` to it.
+- **Provable:** with a fresh (empty) DB and `seedDemo: true`, the loaded atlas
+  contains the demo palace with non-empty `walks` and, at the seed `now`, a mix
+  of `{sharp|holding}` and `{fading|atRisk}` spots; the demo card shows the
+  "Sample" tag; "Remove sample" clears it; a second load after removal does NOT
+  re-seed; with `seedDemo: false` and an empty DB, no palace is seeded and
+  nothing is written.
 
-**T7 — Round-trip guarantee.** Export → import → deep-equal `palaces`
-(including a palace carrying populated `spots` with `fsrs` and `walks`, to
-prove later-EPIC data survives losslessly even though this EPIC does not
-create it).
-- **Provable:** the round-trip test passes on a fixture with full spot/walk
-  data.
+**T7 — Copy sweep + README.** Sweep every new string; update README for the
+shipped heat map, the next-walk schedule, and `SEED_DEMO` as the staging demo.
+- **Provable:** no `—`/`–`, no banned vocabulary, no negative empty-state
+  phrasing in any new user-visible string (including the demo fixture); README
+  describes the heat map/schedule as shipped and documents `SEED_DEMO` with no
+  factory internals.
 
-**T8 — Sample fixture.** `sample.ts` + Load sample / Remove sample in
-Settings and the empty state.
-- **Provable:** load sample fills the overview with real content; remove
-  sample clears it in one action; the sample is labeled as a sample.
-
-**T9 — Runtime config + observability.** `runtimeConfig.ts`, committed
-`public/env.js` (empty), `index.html` loads `/env.js` first, `sentry.ts`,
-`umami.ts`. App runs with all env unset. Sentry inits only with a DSN and
-scrubs PII; Umami injects only with both IDs.
-- **Provable:** with no env, no Sentry init and no Umami tag; a thrown error
-  reaches Sentry only when a DSN is configured; no `contents`/`label` ever
-  appears in an outgoing event payload (assert via `beforeSend`).
-
-**T10 — Docker, staging, README, env example.** Multi-stage `Dockerfile`,
-`nginx.conf` (SPA fallback, no-cache `env.js`), `docker-entrypoint.sh`
-generating `env.js` from env, `docker-compose.staging.yml`, `.env.example`,
-`.gitignore` for `.env`, and `README.md` for strangers.
-- **Provable:** `docker compose -f docker-compose.staging.yml up` builds and
-  serves the working app with all four vars unset; the generated `env.js`
-  reflects any vars that ARE set; no secret is committed; the README's clone
-  → env → compose-up commands match the actual files, and it points to where
-  code and tests live with no factory internals.
+**T8 — Gate.** `npm run typecheck`, `npm run build`, `npm test` all green;
+manual 390px check of the glowing plan, legend, card chips, and lead noted in the
+result.
 
 ---
 
-## Test plan (automated — Vitest, jsdom, fake-indexeddb)
+## Test plan (Vitest, jsdom, fake-indexeddb; e2e where noted)
 
 Each planner acceptance criterion maps to at least one automated test.
-Configure `fake-indexeddb/auto` in the test setup so the persistence layer
-runs headless.
 
 | Planner criterion | Test(s) |
 |---|---|
-| App builds; overview loads real content within ~1s, not blank | `EstateOverview.test.tsx`: renders a skeleton while loading, then content, never an empty white node. Plus `npm run build` in CI. |
-| Empty state names the screen, one action + load sample, no blank region | `EstateOverview.test.tsx`: empty atlas → heading, primary "Add your first palace", "Load the sample" all present. |
-| Create/read/update persists across reload via IndexedDB; autosave | `atlasStore.test.ts`: `saveAtlas` then fresh `loadAtlas` returns equal atlas. `autosave.test.ts`: mutation schedules a debounced save and flushes on `visibilitychange`. `AtlasContext.test.tsx`: create/rename/delete persist. |
-| Export = single JSON with `schemaVersion` + `exportedAt`; import restores exactly | `exportAtlas.test.ts`: `buildExport` shape. `roundtrip.test.ts`: export → import → deep-equal `palaces`. |
-| Import rejects malformed JSON, wrong/missing version, oversize; friendly message, no crash | `validate.test.ts`: each `ImportError` case. `importAtlas.test.tsx`: each rejection renders its message and does not throw or replace state. |
-| Docker/compose build and serve behind nginx; env read at start, absent from tree, runs unset | Manual/CI: run `docker compose -f docker-compose.staging.yml up`, curl the served index and `/env.js`. `git grep` proves no `.env` or secret committed. Documented in result summary. |
-| Sentry captures on DSN, no-ops without; Umami only with IDs; no PII sent | `sentry.test.ts`: `initSentry` is a no-op with empty DSN; with a DSN, a captured error's `beforeSend` output contains no `contents`/`label`. `umami.test.ts`: tag injected only when both IDs set. |
-| README lets a stranger understand, run, and contribute; no factory internals | Manual review against the compose files; `git grep` for factory terms returns nothing in `README.md`. |
-| Usable at 390px, no horizontal scroll, ~44px targets | `responsive.test.tsx` (jsdom asserts container has no fixed width forcing overflow and buttons carry the min-target class) plus a manual 390px check noted in the result. |
+| Each spot colored by current retrievability on a clear scale, updating immediately after a walk; color never the only signal | `SketchSurface.test.tsx`: spots render the `data-health` matching `spotHealth`; an unwalked spot is `unwalked`; after applying `assembleCompletedWalk` the rerendered plan's `data-health` changes. `HealthLegend.test.tsx`: five bands, each with its word and a non-color shape marker; legend readable with color removed. Marker/number contrast validated (documented). |
+| Overview shows per-palace overall health + next-walk date and makes the most-at-risk obvious | `EstateOverview.test.tsx`: cards show the overall band word and `formatNextWalk` text; most-at-risk palace is first and flagged "Walk next" with a "Walk this palace" action; 0-spot palace shows no band; no flag when nothing walked. `PalaceCard.test.tsx`: chip + next-walk render from `palaceHealth`. |
+| SEED_DEMO shows a real glowing sample (mix of healthy/failing) within a minute, zero input, labeled + removable in one action | `demoSeed.test.ts`: `buildDemoAtlas(now)` yields one labeled sample palace with non-empty `walks`; at `now` ≥1 spot in `{sharp,holding}` and ≥1 in `{fading,atRisk}`, not all one band; round-trips through export/import unchanged. `atlasStore.test.ts`: empty DB + `seedDemo:true` seeds and persists once; present record never re-seeds; `seedDemo:false` writes nothing. `isSamplePalace(DEMO_PALACE_ID) === true`. |
+| Next-walk date = earliest spot due date, recomputed after each walk | `palaceHealth.test.ts`: `nextDue` equals the min walked `due`; `null` when none walked; changes to the new earliest due after a simulated walk. |
+| Heat map reads at 390px and renders with no perceptible lag for dozens of spots | `responsive.test.tsx`: the plan container and legend carry no fixed width forcing overflow at 390px. `SketchSurface.test.tsx`: the memoized health map is not recomputed on a view (pan/zoom) change (assert via a spy/`useMemo` dependency, or that health is computed once for a 50-spot palace across repeated view updates). Manual 390px + large-palace smooth-pan check noted in the result. |
+| Health colors meet contrast; legend/key reads without relying on color alone | Palette validator run against parchment surfaces (light `#f6f3ec`, dark `#262320`), results documented; `HealthLegend.test.tsx`: every row exposes its band word and shape (identity survives color removal). |
+| Signature moment reachable end-to-end | `e2e/atlas.spec.ts` (extend): load with the seeded demo (or load sample then walk), open the palace, assert colored spots are visible on the plan and the summary. |
 
-`package.json` scripts: `dev`, `build`, `preview`, `test`
-(`vitest run`), `typecheck` (`tsc --noEmit`), `lint` (optional). CI-relevant
-gate for DONE: `npm run typecheck`, `npm run build`, and `npm run test` all
-pass, and `docker compose -f docker-compose.staging.yml up` serves the app.
+CI gate for DONE: `npm run typecheck`, `npm run build`, `npm test` pass; e2e
+green via `bash scripts/e2e.sh`.
 
 ---
 
 ## Definition of done
 
-- Every planner acceptance criterion has a passing automated test (or, where
-  only a running container can prove it, a documented manual verification in
-  the result summary) per the table above.
-- `npm run typecheck`, `npm run build`, `npm run test` pass.
-- The staging compose stack builds and serves the working app with all env
-  vars unset, and reflects set vars in the generated `env.js`.
-- No secret is committed; `.env` is gitignored; `.env.example` holds
-  placeholders only.
-- Every user-visible string passes the human-voice sweep (no `—`/`–`, no
-  banned LLM vocabulary, no negative empty-state phrasing).
-- The app is usable at 390px with no horizontal scroll and ~44px targets.
-- Later-EPIC data (`spots` with `fsrs`, `walks`) survives an export/import
-  round trip losslessly, even though this EPIC never creates it.
+- The palace view plan colors every spot by its `spotHealth` band, updates
+  immediately after a walk, and the reading never depends on color alone (shape/
+  pattern + number + accessible word + legend). An unwalked spot is neutral, not
+  a fake score.
+- The estate overview shows each palace's overall health and next-walk date,
+  orders palaces most-at-risk first, and flags the most-at-risk one with a "Walk
+  next" primary action. Thumbnails glow by health.
+- `next-walk date` equals the earliest walked-spot due date and recomputes after
+  each walk.
+- `SEED_DEMO=1` on a fresh boot seeds one clearly-labeled sample palace whose
+  plan glows with a mix of healthy and failing spots within a minute, removable
+  in one action, and it never re-seeds after removal. `SEED_DEMO` off / a present
+  atlas seeds nothing.
+- Health colors are validated for contrast against the parchment surfaces; the
+  legend reads without color; the plan, legend, cards, and lead are usable at
+  390px with no horizontal scroll; a dozens-of-spots plan pans without FSRS
+  recompute.
+- No data-model/schema/migration/persistence change; `SCHEMA_VERSION` stays `1`;
+  the FSRS math and thresholds are untouched.
+- Every new user-visible string passes the human-voice sweep (no `—`/`–`, no
+  banned LLM vocabulary, no negative empty-state phrasing), including the demo
+  fixture copy.
+- `npm run typecheck`, `npm run build`, `npm test`, and the Playwright e2e pass;
+  a manual 390px check of the glow, legend, chips, and lead is noted in the
+  result.
+```

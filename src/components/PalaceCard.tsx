@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import type { Palace } from "../model/atlas";
-import { SAMPLE_PALACE_IDS } from "../features/sample/sample";
+import { isSamplePalace } from "../features/sample/sample";
+import { palaceHealth } from "../features/walk/palaceHealth";
+import { HEALTH_TEXT, formatNextWalk } from "../features/walk/healthText";
 import { PalaceThumbnail } from "./sketch/PalaceThumbnail";
 
 function formatDate(iso: string): string {
@@ -16,17 +18,22 @@ function formatDate(iso: string): string {
 
 export function PalaceCard({
   palace,
+  now,
+  walkNext = false,
   onRename,
   onDelete,
 }: {
   palace: Palace;
+  now: Date;
+  walkNext?: boolean;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(palace.name);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isSample = SAMPLE_PALACE_IDS.includes(palace.id);
+  const isSample = isSamplePalace(palace.id);
+  const health = useMemo(() => palaceHealth(palace, now), [palace, now]);
 
   useEffect(() => {
     if (editing) inputRef.current?.select();
@@ -55,7 +62,7 @@ export function PalaceCard({
         aria-hidden="true"
         tabIndex={-1}
       >
-        <PalaceThumbnail palace={palace} />
+        <PalaceThumbnail palace={palace} now={now} />
       </Link>
       <div className="palace-card__body">
         {editing ? (
@@ -79,16 +86,30 @@ export function PalaceCard({
               {palace.name}
             </Link>
             {isSample && <span className="tag">Sample</span>}
+            {walkNext && <span className="tag tag--walk-next">Walk next</span>}
           </h3>
         )}
         <p className="palace-card__meta">
           {spotLabel}
           {palace.createdAt ? ` · Added ${formatDate(palace.createdAt)}` : ""}
         </p>
-        {/* Health line reserved for the heat map (EPIC 4). */}
-        <p className="palace-card__health">Not walked yet</p>
+        {/* A palace with nothing drawn has no health to report; its card
+            invites drawing through the spot count instead. */}
+        {spotCount > 0 && (
+          <p className="palace-card__health" data-health={health.overall}>
+            <span className="palace-card__health-word">
+              {HEALTH_TEXT[health.overall]}
+            </span>
+            {health.nextDue ? ` · ${formatNextWalk(health.nextDue, now)}` : ""}
+          </p>
+        )}
       </div>
       <div className="palace-card__actions">
+        {walkNext && (
+          <Link className="btn btn--primary" to={`/palace/${palace.id}/walk`}>
+            Walk this palace
+          </Link>
+        )}
         {!editing && (
           <button className="btn btn--secondary" onClick={startEdit}>
             Rename

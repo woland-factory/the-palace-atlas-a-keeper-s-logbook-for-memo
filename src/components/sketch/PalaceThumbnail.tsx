@@ -1,4 +1,5 @@
 import type { Palace } from "../../model/atlas";
+import { spotHealth } from "../../features/walk/scheduler";
 import {
   outlinePathD,
   spotsPathD,
@@ -7,8 +8,10 @@ import {
 } from "../../features/sketch/geometry";
 
 // A cheap, static mini plan of a palace's real geometry. No interactivity, so an
-// overview of many palaces stays fast. Decorative: the caller labels it.
-export function PalaceThumbnail({ palace }: { palace: Palace }) {
+// overview of many palaces stays fast. Decorative: the caller labels it. When
+// `now` is given, each spot glows by its health band, so the estate reads at a
+// glance.
+export function PalaceThumbnail({ palace, now }: { palace: Palace; now?: Date }) {
   const spotPoints: Point[] = palace.spots.map((s) => ({ x: s.x, y: s.y }));
   const outlinePoints: Point[] = (palace.outline ?? []).flatMap((s) => s.points);
   const hasGeometry = spotPoints.length > 0 || outlinePoints.length > 0;
@@ -58,15 +61,16 @@ export function PalaceThumbnail({ palace }: { palace: Palace }) {
       {spotPoints.length > 1 && (
         <path d={spotsPathD(spotPoints)} className="thumb__path" fill="none" />
       )}
-      {spotPoints.map((p, i) => (
-        <circle
-          key={i}
-          cx={p.x}
-          cy={p.y}
-          r={r}
-          className="thumb__spot"
-          strokeWidth={stroke}
-        />
+      {palace.spots.map((s) => (
+        <g key={s.id} data-health={now ? spotHealth(s.fsrs, now).label : undefined}>
+          <circle
+            cx={s.x}
+            cy={s.y}
+            r={r}
+            className="thumb__spot"
+            strokeWidth={stroke}
+          />
+        </g>
       ))}
     </svg>
   );

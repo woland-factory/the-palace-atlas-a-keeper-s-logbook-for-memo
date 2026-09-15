@@ -1,7 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { SketchSurface } from "./SketchSurface";
 import { newPalace, newSpot, type Palace } from "../../model/atlas";
+import * as scheduler from "../../features/walk/scheduler";
+import { HEALTH_TEXT } from "../../features/walk/healthText";
+import { assembleCompletedWalk } from "../../features/walk/walkSession";
 import type { View } from "../../features/sketch/geometry";
 
 const FULL_VIEW: View = { x: 0, y: 0, w: 1000, h: 1000 };
@@ -51,6 +54,7 @@ function mockRect(el: Element) {
 function renderSurface(palace: Palace, overrides: Partial<Parameters<typeof SketchSurface>[0]> = {}) {
   const props = {
     palace,
+    now: new Date(),
     view: FULL_VIEW,
     onViewChange: vi.fn(),
     onInitView: vi.fn(),
@@ -76,9 +80,11 @@ describe("SketchSurface", () => {
     palace.spots[0].label = "Front door";
     const { container } = renderSurface(palace);
 
-    expect(screen.getByRole("button", { name: "Spot 1, Front door" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Spot 2" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Spot 3" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Spot 1, Front door, Not walked yet" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Spot 2, Not walked yet" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Spot 3, Not walked yet" })).toBeInTheDocument();
     // A single connecting path through the spots.
     expect(container.querySelector("path.sketch-path")).not.toBeNull();
   });
@@ -157,5 +163,93 @@ describe("SketchSurface", () => {
     const { container } = renderSurface(palace);
     const svg = container.querySelector("svg.sketch-surface__svg")!;
     expect(svg.getAttribute("class")).toContain("sketch-surface__svg");
+  });
+});
+
+describe("SketchSurface health coloring", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("an unwalked spot carries the neutral unwalked band, never a fake score", () => {
+    const palace = palaceWithSpots([[100, 100]]);
+    const { container } = renderSurface(palace);
+    const g = container.querySelector("[data-spot-id]")!;
+    expect(g.getAttribute("data-health")).toBe("unwalked");
+    expect(container.querySelector(".health-ring")).toBeNull();
+  });
+
+  it("each spot's data-health matches spotHealth, and failing bands wear a ring", () => {
+    const now = new Date("2026-09-15T10:00:00.000Z");
+    const walkedAt = new Date("2026-09-05T10:00:00.000Z");
+    let palace = palaceWithSpots([
+      [100, 100],
+      [400, 200],
+    ]);
+    palace = assembleCompletedWalk(
+      palace,
+      [
+        { spotId: palace.spots[0].id, grade: "sharp" },
+        { spotId: palace.spots[1].id, grade: "missed" },
+      ],
+      walkedAt,
+      walkedAt,
+      "w1",
+    );
+    const { container } = renderSurface(palace, { now });
+
+    for (const spot of palace.spots) {
+      const expected = scheduler.spotHealth(spot.fsrs, now).label;
+      const g = container.querySelector(`[data-spot-id="${spot.id}"]`)!;
+      expect(g.getAttribute("data-health")).toBe(expected);
+      // The accessible name carries the health word.
+      expect(g.getAttribute("aria-label")).toContain(HEALTH_TEXT[expected]);
+    }
+    // The missed spot has decayed into a failing band and carries the
+    // non-color pattern ring.
+    const weak = container.querySelector(
+      `[data-spot-id="${palace.spots[1].id}"] .health-ring`,
+    );
+    expect(weak).not.toBeNull();
+  });
+
+  it("rerendering after a completed walk updates the bands in place", () => {
+    const now = new Date("2026-09-15T10:00:00.000Z");
+    const palace = palaceWithSpots([[100, 100]]);
+    const { container, rerender, props } = renderSurface(palace, { now });
+    expect(
+      container.querySelector("[data-spot-id]")!.getAttribute("data-health"),
+    ).toBe("unwalked");
+
+    const walked = assembleCompletedWalk(
+      palace,
+      [{ spotId: palace.spots[0].id, grade: "sharp" }],
+      now,
+      now,
+      "w1",
+    );
+    rerender(<SketchSurface {...props} palace={walked} now={now} />);
+    expect(
+      container.querySelector("[data-spot-id]")!.getAttribute("data-health"),
+    ).toBe("sharp");
+  });
+
+  it("pan/zoom view changes never recompute the health map", () => {
+    const spy = vi.spyOn(scheduler, "spotHealth");
+    const palace = palaceWithSpots(
+      Array.from({ length: 50 }, (_, i) => [i * 15, i * 15] as [number, number]),
+    );
+    const now = new Date("2026-09-15T10:00:00.000Z");
+    const { rerender, props } = renderSurface(palace, { now });
+    const afterFirstRender = spy.mock.calls.length;
+    expect(afterFirstRender).toBeGreaterThan(0);
+
+    // Simulate repeated pan/zoom: only the view prop changes.
+    for (const w of [900, 800, 700, 600]) {
+      rerender(
+        <SketchSurface {...props} now={now} view={{ x: 10, y: 10, w, h: w }} />,
+      );
+    }
+    expect(spy.mock.calls.length).toBe(afterFirstRender);
   });
 });

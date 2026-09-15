@@ -84,6 +84,35 @@ describe("responsive structure at 390px", () => {
     }
   });
 
+  it("the glowing plan and its legend force no overflow at 390px", async () => {
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    const palace = newPalace("Childhood home");
+    palace.spots = [newSpot(200, 200, 0), newSpot(500, 500, 1)];
+    await saveAtlas({ ...newAtlas(), palaces: [palace] });
+
+    const { container } = render(
+      <MemoryRouter initialEntries={[`/palace/${palace.id}`]}>
+        <ToastProvider>
+          <AtlasProvider>
+            <Routes>
+              <Route path="/palace/:id" element={<PalaceEditor />} />
+            </Routes>
+          </AtlasProvider>
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Childhood home" })).toBeInTheDocument(),
+    );
+
+    // The legend is present next to the plan and neither pins an inline width.
+    expect(container.querySelector(".health-legend")).not.toBeNull();
+    const widthPinned = Array.from(container.querySelectorAll<HTMLElement>("*")).filter(
+      (el) => /width:\s*\d{3,}px/.test(el.getAttribute("style") ?? ""),
+    );
+    expect(widthPinned).toEqual([]);
+  });
+
   it("the walk is one-handed at 390px: tap-target grade buttons, no fixed widths", async () => {
     const user = userEvent.setup();
     Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });

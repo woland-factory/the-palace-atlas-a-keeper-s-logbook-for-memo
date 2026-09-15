@@ -1,4 +1,7 @@
+import { useMemo } from "react";
 import type { Palace } from "../../model/atlas";
+import { spotHealth, type HealthLabel } from "../../features/walk/scheduler";
+import { HealthRing } from "../HealthRing";
 import {
   outlinePathD,
   spotsPathD,
@@ -10,14 +13,20 @@ import { spotAccessibleName } from "../sketch/SketchSurface";
 // A read-only plan for the walk. It draws the same geometry as the editor using
 // the shared pure helpers, fits the whole plan so every spot is visible at
 // 390px, strongly highlights the current spot, and de-emphasizes the rest. It
-// has no pointer or edit handlers: nothing here can mutate the atlas. It does
-// NOT color spots by health; that is EPIC 4.
+// has no pointer or edit handlers: nothing here can mutate the atlas.
+// During the walk itself the plan stays uncolored, so the keeper is never
+// biased about which spots are failing while testing recall. With `showHealth`
+// and `now` (the summary payoff) every spot glows by its health band instead.
 export function WalkPlan({
   palace,
   activeSpotId,
+  showHealth = false,
+  now,
 }: {
   palace: Palace;
   activeSpotId: string | null;
+  showHealth?: boolean;
+  now?: Date;
 }) {
   const spotPoints: Point[] = palace.spots.map((s) => ({ x: s.x, y: s.y }));
   const outlinePoints: Point[] = (palace.outline ?? []).flatMap((s) => s.points);
@@ -27,6 +36,14 @@ export function WalkPlan({
     : `0 0 ${palace.viewBox.w} ${palace.viewBox.h}`;
   const vbW = Number(viewBox.split(" ")[2]) || palace.viewBox.w;
   const r = vbW * 0.03;
+
+  const colored = showHealth && !!now;
+  const healthById = useMemo(() => {
+    const map = new Map<string, HealthLabel>();
+    if (!colored || !now) return map;
+    for (const s of palace.spots) map.set(s.id, spotHealth(s.fsrs, now).label);
+    return map;
+  }, [colored, palace.spots, now]);
 
   const active = palace.spots.find((s) => s.id === activeSpotId);
   const label = active
@@ -38,7 +55,7 @@ export function WalkPlan({
 
   return (
     <svg
-      className="walk-plan"
+      className={`walk-plan${colored ? " walk-plan--health" : ""}`}
       viewBox={viewBox}
       preserveAspectRatio="xMidYMid meet"
       role="img"
@@ -57,12 +74,14 @@ export function WalkPlan({
       )}
       {palace.spots.map((s) => {
         const isActive = s.id === activeSpotId;
+        const health = colored ? healthById.get(s.id) : undefined;
         return (
           <g
             key={s.id}
             className={`walk-plan__spot${isActive ? " is-active" : ""}`}
             data-spot-id={s.id}
             data-active={isActive ? "true" : undefined}
+            data-health={health}
           >
             {isActive && (
               <circle
@@ -79,6 +98,7 @@ export function WalkPlan({
               r={isActive ? r * 1.35 : r}
               className="walk-plan__marker"
             />
+            {health && <HealthRing label={health} cx={s.x} cy={s.y} r={r} />}
             <text
               x={s.x}
               y={s.y}

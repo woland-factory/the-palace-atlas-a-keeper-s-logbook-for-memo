@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtlas } from "../state/AtlasContext";
 import { EmptyState } from "../components/EmptyState";
@@ -6,6 +6,7 @@ import { PalaceCard } from "../components/PalaceCard";
 import { NewPalaceForm } from "../components/NewPalaceForm";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { getSampleAtlas } from "../features/sample/sample";
+import { mostAtRisk, sortByRisk } from "../features/walk/palaceHealth";
 import { useToast } from "../components/Toast";
 
 function LoadingSkeleton() {
@@ -33,6 +34,14 @@ export function EstateOverview() {
 
   const palaces = atlas.palaces;
   const hasPalaces = palaces.length > 0;
+
+  // One clock read per view; the whole overview's health agrees with itself.
+  const now = useMemo(() => new Date(), []);
+  const ordered = useMemo(() => sortByRisk(palaces, now), [palaces, now]);
+  const walkNextId = useMemo(
+    () => mostAtRisk(palaces, now)?.id ?? null,
+    [palaces, now],
+  );
 
   const loadSample = () => {
     replaceAtlas(getSampleAtlas());
@@ -64,10 +73,12 @@ export function EstateOverview() {
         <>
           <NewPalaceForm onCreate={createPalace} />
           <ul className="palace-list">
-            {palaces.map((palace) => (
+            {ordered.map((palace) => (
               <PalaceCard
                 key={palace.id}
                 palace={palace}
+                now={now}
+                walkNext={palace.id === walkNextId}
                 onRename={renamePalace}
                 onDelete={setPendingDelete}
               />

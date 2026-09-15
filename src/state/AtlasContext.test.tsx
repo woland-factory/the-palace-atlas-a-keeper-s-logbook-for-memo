@@ -112,6 +112,35 @@ describe("AtlasContext", () => {
     remounted.unmount();
   });
 
+  it("seeds the demo palace on first boot when the deployment asks for it", async () => {
+    window.__ENV__ = { SEED_DEMO: "1" };
+    try {
+      const view = renderHarness();
+      await waitFor(() =>
+        expect(screen.getByTestId("loading")).toHaveTextContent("false"),
+      );
+      expect(screen.getByTestId("names")).toHaveTextContent(
+        "Corner bakery (sample)",
+      );
+      // Durable: the seed reached IndexedDB, not just React state.
+      expect((await loadAtlas()).palaces.map((p) => p.name)).toEqual([
+        "Corner bakery (sample)",
+      ]);
+      view.unmount();
+    } finally {
+      delete window.__ENV__;
+    }
+  });
+
+  it("does not seed and does not write when the flag is off", async () => {
+    const view = renderHarness();
+    await waitFor(() =>
+      expect(screen.getByTestId("loading")).toHaveTextContent("false"),
+    );
+    expect(screen.getByTestId("count")).toHaveTextContent("0");
+    view.unmount();
+  });
+
   it("updatePalace applies an updater to one palace and persists it", async () => {
     const user = userEvent.setup();
     const view = renderHarness();

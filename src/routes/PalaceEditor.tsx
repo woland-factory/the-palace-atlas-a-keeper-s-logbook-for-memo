@@ -7,6 +7,7 @@ import { SketchSurface, spotAccessibleName } from "../components/sketch/SketchSu
 import { SpotInspector } from "../components/sketch/SpotInspector";
 import { SpotList } from "../components/sketch/SpotList";
 import { GuidedFirstRun } from "../components/sketch/GuidedFirstRun";
+import { HealthLegend } from "../components/HealthLegend";
 import { hasOnboarded, markOnboarded } from "../features/sketch/onboarding";
 import {
   MAX_OUTLINE_POINTS,
@@ -36,6 +37,10 @@ export function PalaceEditor() {
   const [tool, setTool] = useState<"place" | "outline">("place");
   const [announce, setAnnounce] = useState("");
   const [guideOpen, setGuideOpen] = useState<boolean | null>(null);
+
+  // One clock read per view: the whole plan's health is computed against this
+  // moment, so pan/zoom and edits never drift the reading mid-session.
+  const now = useMemo(() => new Date(), []);
 
   const spots = palace?.spots ?? [];
   const outlinePoints = outlinePointCount(palace?.outline);
@@ -296,6 +301,7 @@ export function PalaceEditor() {
       <div className="editor__surface">
         <SketchSurface
           palace={palace}
+          now={now}
           view={view}
           onViewChange={setView}
           onInitView={setView}
@@ -312,6 +318,8 @@ export function PalaceEditor() {
           </p>
         )}
       </div>
+
+      {spots.length > 0 && <HealthLegend />}
 
       {guideOpen && (
         <GuidedFirstRun
@@ -338,7 +346,7 @@ export function PalaceEditor() {
         spots={spots}
         selectedSpotId={selectedSpotId}
         onSelect={selectSpot}
-        now={new Date()}
+        now={now}
       />
 
       <div className="visually-hidden" role="status" aria-live="polite">

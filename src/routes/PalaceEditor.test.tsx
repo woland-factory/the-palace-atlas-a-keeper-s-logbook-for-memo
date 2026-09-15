@@ -163,7 +163,7 @@ describe("PalaceEditor", () => {
 
     // Door is now spot 2 on the canvas.
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Spot 2, Door" })).toBeInTheDocument(),
+      expect(screen.getByRole("button", { name: /Spot 2, Door/ })).toBeInTheDocument(),
     );
     await waitFor(() => expect(screen.getByText("Saved")).toBeInTheDocument());
     let saved = await loadAtlas();
@@ -175,7 +175,7 @@ describe("PalaceEditor", () => {
     saved.palaces[0].spots.forEach((s, i) => expect(s.order).toBe(i));
 
     // Remove the now-second spot (Door).
-    await user.click(screen.getByRole("button", { name: "Spot 2, Door" }));
+    await user.click(screen.getByRole("button", { name: /Spot 2, Door/ }));
     await user.click(screen.getByRole("button", { name: "Remove spot" }));
     await waitFor(() => expect(screen.getByText("Saved")).toBeInTheDocument());
     saved = await loadAtlas();

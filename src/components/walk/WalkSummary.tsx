@@ -3,9 +3,12 @@ import type { Palace } from "../../model/atlas";
 import { spotHealth } from "../../features/walk/scheduler";
 import { HEALTH_TEXT, formatDue } from "../../features/walk/healthText";
 import { tallyResults, type WalkResult } from "../../features/walk/walkSession";
+import { WalkPlan } from "./WalkPlan";
+import { HealthLegend } from "../HealthLegend";
 
-// The end-of-walk summary: a grade tally and each spot's now-updated health, so
-// the keeper sees the palace view reflect the walk they just finished.
+// The end-of-walk summary: the just-updated plan glowing by health, a grade
+// tally, and each spot's new band, so the keeper sees the walk land on the map
+// before leaving the walk screen.
 export function WalkSummary({
   palace,
   results,
@@ -20,6 +23,10 @@ export function WalkSummary({
   return (
     <div className="walk-summary">
       <h1 className="walk-summary__heading">Walk done.</h1>
+      <div className="walk-summary__plan">
+        <WalkPlan palace={palace} activeSpotId={null} showHealth now={now} />
+      </div>
+      <HealthLegend />
       <p className="walk-summary__tally">
         Sharp {tally.sharp} · Shaky {tally.shaky} · Missed {tally.missed}
       </p>
