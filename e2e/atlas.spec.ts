@@ -275,7 +275,7 @@ test("walk a palace: reveal, grade to the summary, and see health reflected", as
 
   // The estate overview now reads the palace's health, schedules its next
   // walk, and leads the keeper to it.
-  await page.getByRole("link", { name: "Palaces" }).click();
+  await page.getByRole("link", { name: "Palaces", exact: true }).click();
   await expect(page.getByText("Walk next")).toBeVisible();
   await expect(page.getByRole("link", { name: "Walk this palace" })).toBeVisible();
   await expect(page.getByText(/Next walk |Walk due now/)).toBeVisible();
