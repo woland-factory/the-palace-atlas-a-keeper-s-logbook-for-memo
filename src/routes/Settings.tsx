@@ -3,8 +3,7 @@ import { useAtlas } from "../state/AtlasContext";
 import { useToast } from "../components/Toast";
 import { downloadAtlas } from "../features/portability/exportAtlas";
 import { readAndImport } from "../features/portability/importAtlas";
-import { getSampleAtlas } from "../features/sample/sample";
-import { newAtlas } from "../model/atlas";
+import { getSampleAtlas, isSamplePalace } from "../features/sample/sample";
 
 export function Settings() {
   const { atlas, replaceAtlas } = useAtlas();
@@ -73,7 +72,10 @@ export function Settings() {
           <button
             className="btn btn--ghost"
             onClick={() => {
-              replaceAtlas(newAtlas());
+              replaceAtlas({
+                ...atlas,
+                palaces: atlas.palaces.filter((p) => !isSamplePalace(p.id)),
+              });
               showToast("Sample removed.");
             }}
           >

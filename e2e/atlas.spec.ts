@@ -91,7 +91,8 @@ test("export then import restores the same atlas", async ({ page }) => {
   const path = await download.path();
   expect(readFileSync(path, "utf8")).toContain("Grandmother's flat");
 
-  // Clear everything, then import the file back.
+  // Remove sample touches only sample palaces; the import below replaces
+  // the whole atlas with the exported file.
   await page
     .getByRole("heading", { name: "Sample atlas" })
     .locator("xpath=ancestor::section")

@@ -12,7 +12,7 @@ services:
       SENTRY_DSN: "${SENTRY_DSN:-}"
       UMAMI_URL: "${UMAMI_URL:-}"
       UMAMI_WEBSITE_ID: "${UMAMI_WEBSITE_ID:-}"
-      # Staging-only demo seed flag (a later feature acts on it).
+      # Seeds a sample palace on the very first boot, when no atlas exists yet.
       SEED_DEMO: "1"
     networks:
       - default
