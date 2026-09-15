@@ -19,10 +19,26 @@ order, one at a time. Each step highlights the current spot on a read-only plan,
 prompts your recall, reveals the filed contents when you ask, and takes one of
 three grades. The grades feed [FSRS](https://github.com/open-spaced-repetition/ts-fsrs),
 a spaced-repetition scheduler, which advances each spot's memory state and sets
-its next due date. The palace view then reads each spot's health in plain words:
-`Not walked yet`, `Sharp`, `Holding`, `Fading`, or `At risk`. A spot you have
-never walked reads `Not walked yet`, never a fake score. The colored heat map
-that paints these bands onto your floor plan comes next.
+its next due date. Each spot's health reads in plain words: `Not walked yet`,
+`Sharp`, `Holding`, `Fading`, or `At risk`. A spot you have never walked reads
+`Not walked yet`, never a fake score.
+
+## The heat map
+
+The floor plan you drew is also your memory's health record. Every spot on the
+palace view is colored by its current recall probability, from green (`Sharp`)
+through amber and orange down to red (`At risk`), and the reading never depends
+on color alone: failing spots wear a dashed or heavy ring, every marker keeps
+its number, each spot's health word is in its accessible name, and a compact
+legend keys the bands. The moment you finish a walk, the summary shows the same
+plan glowing with the grades you just gave. During a walk the plan stays
+uncolored, so the colors never bias your recall.
+
+The estate overview reads the same way at a glance: each palace card shows its
+overall health (the worst walked spot governs), its next walk date (the
+earliest spot due date), and a mini plan tinted by band. The most-at-risk
+palace sorts first and carries a "Walk next" chip with a one-tap "Walk this
+palace" action, so the next ten minutes of revision are never guesswork.
 
 Your data stays in your browser. There is no account and no server. Nothing
 you write leaves your machine unless you export it yourself.
@@ -66,7 +82,7 @@ from these environment variables (all optional, all default to empty):
 | `SENTRY_DSN` | Frontend error tracking. Off when empty. |
 | `UMAMI_URL` | Analytics script URL. Off unless both Umami values are set. |
 | `UMAMI_WEBSITE_ID` | Analytics site id. |
-| `SEED_DEMO` | Reserved for a later demo-seed feature. |
+| `SEED_DEMO` | Set to `1` to seed a sample palace with real walk history on the very first boot, so the heat map shows value with no input. Only an empty store is ever seeded; once the visitor removes the sample it stays gone. Meant for demo and staging deployments. |
 
 Copy `.env.example` to `.env` to set them for a deployment. Never commit real
 values.
@@ -87,8 +103,9 @@ The code lives in `src/`:
   the forward-only migration framework.
 - `persistence/`: the IndexedDB layer and debounced autosave.
 - `state/`: the React context that holds the current atlas.
-- `features/`: export/import, the bundled sample, and `walk/` (the FSRS
-  scoring adapter and pure walk-progression helpers).
+- `features/`: export/import, the bundled samples and demo seed, and `walk/`
+  (the FSRS scoring adapter, pure walk-progression helpers, and the
+  palace-level health aggregates behind the heat map).
 - `routes/` and `components/`: the screens and UI pieces.
 - `observability/`: Sentry and Umami wiring that no-ops without config.
 

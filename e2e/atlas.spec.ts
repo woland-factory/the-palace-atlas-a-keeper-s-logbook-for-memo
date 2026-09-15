@@ -136,7 +136,7 @@ test("sketch a palace: place spots, name one, and it survives a reload", async (
   await expect(markers(page)).toHaveCount(2);
   await expect(
     page.locator("svg.sketch-surface__svg [data-spot-id]").first(),
-  ).toHaveAttribute("aria-label", "Spot 1, Front door");
+  ).toHaveAttribute("aria-label", "Spot 1, Front door, Not walked yet");
 });
 
 test("reorder and delete are reflected after a reload", async ({ page }) => {
@@ -227,8 +227,10 @@ test("walk a palace: reveal, grade to the summary, and see health reflected", as
   await surface(page).click({ position: { x: 220, y: 210 } });
   await expect(markers(page)).toHaveCount(2);
 
-  // Before any walk, the list reads the honest unwalked state.
+  // Before any walk, the list reads the honest unwalked state and the plan
+  // wears neutral markers.
   await expect(page.getByText("Not walked yet").first()).toBeVisible();
+  await expect(markers(page).first()).toHaveAttribute("data-health", "unwalked");
 
   // Start the walk and step through both spots.
   await page.getByRole("link", { name: "Walk this palace" }).click();
@@ -242,18 +244,41 @@ test("walk a palace: reveal, grade to the summary, and see health reflected", as
   await page.getByRole("button", { name: "Reveal" }).click();
   await page.getByRole("button", { name: "Shaky" }).click();
 
-  // The summary tallies the walk.
+  // The summary tallies the walk and shows the just-updated plan glowing:
+  // every spot is colored by its fresh band, with the legend as the key.
   await expect(page.getByRole("heading", { name: "Walk done." })).toBeVisible();
   await expect(page.getByText("Sharp 1 · Shaky 1 · Missed 0")).toBeVisible();
+  const summaryPlan = page.locator("svg.walk-plan--health");
+  await expect(summaryPlan).toBeVisible();
+  await expect(summaryPlan.locator("[data-spot-id][data-health]")).toHaveCount(2);
+  await expect(
+    summaryPlan.locator('[data-health="unwalked"]'),
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Health key")).toBeVisible();
 
-  // Back on the plan, the palace view reflects the fresh grades.
+  // Back on the plan, the palace view reflects the fresh grades: the drawn
+  // plan itself is colored, no spot stays neutral, and the legend reads it.
   await page.getByRole("link", { name: "Back to the plan" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "New palace" })).toBeVisible();
+  await expect(
+    page.locator('svg.sketch-surface__svg [data-spot-id][data-health]'),
+  ).toHaveCount(2);
+  await expect(
+    page.locator('svg.sketch-surface__svg [data-health="unwalked"]'),
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Health key")).toBeVisible();
   const spotNav = page.getByRole("navigation", { name: "Spots in walking order" });
   // Right after a walk both spots read a due date, and none stays unwalked.
   await expect(spotNav.getByText(/· due/).first()).toBeVisible();
   await expect(spotNav.getByText(/· due/)).toHaveCount(2);
   await expect(spotNav.getByText("Not walked yet")).toHaveCount(0);
+
+  // The estate overview now reads the palace's health, schedules its next
+  // walk, and leads the keeper to it.
+  await page.getByRole("link", { name: "Palaces" }).click();
+  await expect(page.getByText("Walk next")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Walk this palace" })).toBeVisible();
+  await expect(page.getByText(/Next walk |Walk due now/)).toBeVisible();
 });
 
 test("guided first run shows once, Skip dismisses, and it never returns", async ({
