@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAtlas } from "../state/AtlasContext";
 import { newSpot } from "../model/atlas";
@@ -6,9 +6,7 @@ import { SaveStatus } from "../components/SaveStatus";
 import { SketchSurface, spotAccessibleName } from "../components/sketch/SketchSurface";
 import { SpotInspector } from "../components/sketch/SpotInspector";
 import { SpotList } from "../components/sketch/SpotList";
-import { GuidedFirstRun } from "../components/sketch/GuidedFirstRun";
 import { HealthLegend } from "../components/HealthLegend";
-import { hasOnboarded, markOnboarded } from "../features/sketch/onboarding";
 import {
   MAX_OUTLINE_POINTS,
   appendSpot,
@@ -36,7 +34,6 @@ export function PalaceEditor() {
   const [view, setView] = useState<View>({ x: 0, y: 0, w: 1000, h: 1000 });
   const [tool, setTool] = useState<"place" | "outline">("place");
   const [announce, setAnnounce] = useState("");
-  const [guideOpen, setGuideOpen] = useState<boolean | null>(null);
 
   // One clock read per view: the whole plan's health is computed against this
   // moment, so pan/zoom and edits never drift the reading mid-session.
@@ -44,24 +41,6 @@ export function PalaceEditor() {
 
   const spots = palace?.spots ?? [];
   const outlinePoints = outlinePointCount(palace?.outline);
-  const firstSpotNamed = (spots[0]?.label ?? "").trim().length > 0;
-
-  // Decide once, after load, whether the guide should appear.
-  useEffect(() => {
-    if (guideOpen === null && !loading && palace) {
-      setGuideOpen(!hasOnboarded() && palace.spots.length === 0);
-    }
-  }, [guideOpen, loading, palace]);
-
-  const dismissGuide = useCallback(() => {
-    markOnboarded();
-    setGuideOpen(false);
-  }, []);
-
-  // First success: the first spot is placed and named. Retire the guide.
-  useEffect(() => {
-    if (guideOpen && firstSpotNamed) dismissGuide();
-  }, [guideOpen, firstSpotNamed, dismissGuide]);
 
   const placeSpotAt = useCallback(
     (p: Point) => {
@@ -320,14 +299,6 @@ export function PalaceEditor() {
       </div>
 
       {spots.length > 0 && <HealthLegend />}
-
-      {guideOpen && (
-        <GuidedFirstRun
-          spotCount={spots.length}
-          firstSpotNamed={firstSpotNamed}
-          onSkip={dismissGuide}
-        />
-      )}
 
       {selectedSpot && (
         <SpotInspector

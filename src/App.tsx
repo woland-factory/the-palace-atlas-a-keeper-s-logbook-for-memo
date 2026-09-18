@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppHeader } from "./components/AppHeader";
+import { FirstRunWalkthrough } from "./components/onboarding/FirstRunWalkthrough";
 import { EstateOverview } from "./routes/EstateOverview";
 import { PalaceEditor } from "./routes/PalaceEditor";
 import { WalkSession } from "./routes/WalkSession";
@@ -11,6 +12,7 @@ export function App() {
     <BrowserRouter>
       <div className="app-shell">
         <AppHeader />
+        <FirstRunWalkthrough />
         <Routes>
           <Route path="/" element={<EstateOverview />} />
           <Route path="/palace/:id" element={<PalaceEditor />} />

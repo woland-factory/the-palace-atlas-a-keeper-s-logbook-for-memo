@@ -863,13 +863,20 @@ button {
   width: 100%;
 }
 
-/* Guided first run */
+/* Guided first run. Docked across the core loop, aligned to the content
+   column, in the flow above the screen so it never covers the primary action. */
+.guide-dock {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) 0;
+}
 .guide {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-4);
-  margin-bottom: var(--space-4);
+  padding-right: 76px; /* room for the Skip button in the corner */
   position: relative;
 }
 .guide__steps {
@@ -884,6 +891,13 @@ button {
   align-items: center;
   gap: var(--space-2);
   font-weight: 600;
+}
+.guide__step.is-active {
+  font-weight: 700;
+}
+.guide__step.is-active .guide__check {
+  border-width: 2px;
+  border-color: var(--color-text);
 }
 .guide__step.is-done {
   color: var(--color-text-muted);

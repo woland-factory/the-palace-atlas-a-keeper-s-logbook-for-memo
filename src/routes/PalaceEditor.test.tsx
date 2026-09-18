@@ -246,24 +246,6 @@ describe("PalaceEditor", () => {
     await waitFor(() => expect(screen.getByText("Saved")).toBeInTheDocument());
   });
 
-  it("guides a brand-new keeper, skips on demand, and never returns", async () => {
-    const user = userEvent.setup();
-    const palace = makePalace();
-    await seed(palace);
-    const view = renderEditor(palace.id);
-    await screen.findByRole("heading", { name: "Childhood home" });
-
-    expect(screen.getByText("Tap the plan to place a spot.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Skip" }));
-    expect(screen.queryByText("Tap the plan to place a spot.")).toBeNull();
-    view.unmount();
-
-    // Reload: the guide does not come back.
-    renderEditor(palace.id);
-    await screen.findByRole("heading", { name: "Childhood home" });
-    expect(screen.queryByText("Tap the plan to place a spot.")).toBeNull();
-  });
-
   it("disables placement at the spot cap with the approved message", async () => {
     const palace = makePalace((p) => {
       p.spots = Array.from({ length: 200 }, (_, i) => newSpot(i, i, i));
