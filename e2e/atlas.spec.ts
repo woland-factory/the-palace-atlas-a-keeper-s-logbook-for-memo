@@ -282,16 +282,75 @@ test("walk a palace: reveal, grade to the summary, and see health reflected", as
   await expect(page.getByText(/Next walk |Walk due now/)).toBeVisible();
 });
 
-test("guided first run shows once, Skip dismisses, and it never returns", async ({
+test("first-run walkthrough leads the whole loop and retires at the heat map", async ({
   page,
 }) => {
-  await openNewPalace(page);
+  await page.goto("/");
 
-  await expect(page.getByText("Tap the plan to place a spot.")).toBeVisible();
-  await page.getByRole("button", { name: "Skip" }).click();
-  await expect(page.getByText("Tap the plan to place a spot.")).toHaveCount(0);
+  // A brand-new keeper is greeted by the checklist with step 1 active.
+  const guide = page.getByRole("complementary", { name: "Getting started" });
+  await expect(guide).toBeVisible();
+  await expect(guide.getByText("Add your first palace.")).toBeVisible();
 
+  // Step 1: add a palace, then open it.
+  await page.getByRole("button", { name: "Add your first palace" }).click();
+  await page.getByRole("link", { name: "New palace" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "New palace" })).toBeVisible();
+
+  // Step 2: place a spot and name what lives there.
+  await surface(page).click({ position: { x: 80, y: 90 } });
+  await expect(page.getByRole("heading", { level: 2, name: "Spot 1" })).toBeVisible();
+  await page.getByLabel("Spot name").fill("Front door");
+  await page.getByLabel("What lives here").fill("A red kite leans on the frame.");
+  await expect(page.getByRole("main").getByText("Saved")).toBeVisible();
+  // The first two steps now read done.
+  const doneStep2 = guide
+    .getByRole("listitem")
+    .filter({ hasText: "Place a spot and name what lives there." });
+  await expect(doneStep2).toContainText("✓");
+
+  // Step 3: walk it and grade the one spot.
+  await page.getByRole("link", { name: "Walk this palace" }).click();
+  await expect(page.getByText("Spot 1 of 1")).toBeVisible();
+  await page.getByRole("button", { name: "Reveal" }).click();
+  await page.getByRole("button", { name: "Sharp" }).click();
+
+  // Step 4: the summary shows the glowing plan, and the guide retires.
+  await expect(page.getByRole("heading", { name: "Walk done." })).toBeVisible();
+  await expect(page.locator("svg.walk-plan--health")).toBeVisible();
+  await expect(guide).toHaveCount(0);
+
+  // Back on the plan the guide stays retired, and a reload never brings it back.
+  await page.getByRole("link", { name: "All spots" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "New palace" })).toBeVisible();
+  await expect(
+    page.getByRole("complementary", { name: "Getting started" }),
+  ).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "New palace" })).toBeVisible();
-  await expect(page.getByText("Tap the plan to place a spot.")).toHaveCount(0);
+  await expect(
+    page.getByRole("complementary", { name: "Getting started" }),
+  ).toHaveCount(0);
+});
+
+test("first-run walkthrough is skippable mid-loop and never returns", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const guide = page.getByRole("complementary", { name: "Getting started" });
+  await expect(guide).toBeVisible();
+
+  // Skip mid-loop. The screen's primary action stays clickable right after.
+  await guide.getByRole("button", { name: "Skip" }).click();
+  await expect(guide).toHaveCount(0);
+  await page.getByRole("button", { name: "Add your first palace" }).click();
+  await expect(page.getByRole("heading", { level: 3, name: "New palace" })).toBeVisible();
+
+  // A reload never brings it back.
+  await expect(page.getByText("Saved")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 3, name: "New palace" })).toBeVisible();
+  await expect(
+    page.getByRole("complementary", { name: "Getting started" }),
+  ).toHaveCount(0);
 });

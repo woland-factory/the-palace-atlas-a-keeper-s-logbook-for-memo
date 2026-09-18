@@ -7,6 +7,7 @@ import { AppHeader } from "../components/AppHeader";
 import { EstateOverview } from "./EstateOverview";
 import { PalaceEditor } from "./PalaceEditor";
 import { WalkSession } from "./WalkSession";
+import { FirstRunWalkthrough } from "../components/onboarding/FirstRunWalkthrough";
 import { AtlasProvider } from "../state/AtlasContext";
 import { ToastProvider } from "../components/Toast";
 import { saveAtlas } from "../persistence/atlasStore";
@@ -15,6 +16,7 @@ import { resetDbForTests } from "../persistence/db";
 
 beforeEach(async () => {
   await resetDbForTests();
+  localStorage.clear();
 });
 
 // jsdom does not lay out CSS, so this is a structural guard: at a 390px
@@ -147,5 +149,38 @@ describe("responsive structure at 390px", () => {
     for (const name of ["Missed", "Shaky", "Sharp"]) {
       expect(screen.getByRole("button", { name }).className).toMatch(/\bbtn\b/);
     }
+  });
+
+  it("the first-run checklist docks at 390px without overflow or covering the primary action", async () => {
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    const { container } = renderWithProviders(
+      <>
+        <AppHeader />
+        <FirstRunWalkthrough />
+        <EstateOverview />
+      </>,
+    );
+
+    // The checklist is present for a fresh keeper.
+    const guide = await screen.findByRole("complementary", { name: "Getting started" });
+
+    // It rides in the flow above the routed content, so it never overlays the
+    // screen's primary action. The primary action stays reachable.
+    const primary = screen.getByRole("button", { name: "Add your first palace" });
+    expect(guide.compareDocumentPosition(primary)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    // No element pins an inline pixel width wider than the viewport.
+    const widthPinned = Array.from(container.querySelectorAll<HTMLElement>("*")).filter(
+      (el) => /width:\s*\d{3,}px/.test(el.getAttribute("style") ?? ""),
+    );
+    expect(widthPinned).toEqual([]);
+
+    // Skip is a real, keyboard-reachable tap-target button.
+    const skip = screen.getByRole("button", { name: "Skip" });
+    expect(skip.className).toMatch(/\bbtn\b/);
+    skip.focus();
+    expect(skip).toHaveFocus();
   });
 });
