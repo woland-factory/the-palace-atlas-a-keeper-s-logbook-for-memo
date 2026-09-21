@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Settings } from "./Settings";
@@ -8,6 +8,8 @@ import { render } from "@testing-library/react";
 import { Routes, Route } from "react-router-dom";
 import { resetDbForTests } from "../persistence/db";
 import { SCHEMA_VERSION, type Palace } from "../model/atlas";
+import * as atlasStore from "../persistence/atlasStore";
+import * as exportAtlas from "../features/portability/exportAtlas";
 import { loadAtlas, saveAtlas } from "../persistence/atlasStore";
 import { buildDemoAtlas } from "../features/sample/demoSeed";
 import { getSampleAtlas } from "../features/sample/sample";
@@ -15,6 +17,40 @@ import { useAtlas } from "../state/AtlasContext";
 
 beforeEach(async () => {
   await resetDbForTests();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("Settings while the atlas is still loading", () => {
+  it("holds the layout steady and never exports the unloaded atlas", async () => {
+    // Hold the initial load open so the screen stays in its loading state.
+    vi.spyOn(atlasStore, "loadAtlasOrSeedDemo").mockReturnValue(
+      new Promise(() => {}),
+    );
+    const download = vi.spyOn(exportAtlas, "downloadAtlas");
+    const user = userEvent.setup();
+
+    render(
+      <Providers initialEntries={["/settings"]}>
+        <Settings />
+      </Providers>,
+    );
+
+    // The layout is held: the heading and the primary action are in place, and
+    // the region is marked busy rather than blank.
+    const main = screen.getByRole("main");
+    expect(main).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("heading", { name: "Settings and data" })).toBeInTheDocument();
+
+    const exportBtn = screen.getByRole("button", { name: "Export atlas" });
+    expect(exportBtn).toBeDisabled();
+
+    // Pressing Export cannot fire against the empty initial atlas.
+    await user.click(exportBtn);
+    expect(download).not.toHaveBeenCalled();
+  });
 });
 
 function fileInput(): HTMLInputElement {
@@ -28,6 +64,9 @@ describe("Settings import", () => {
       <Providers initialEntries={["/settings"]}>
         <Settings />
       </Providers>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Import atlas" })).toBeEnabled(),
     );
     const bad = new File(["{ not json"], "atlas.json", { type: "application/json" });
     await user.upload(fileInput(), bad);
@@ -49,6 +88,10 @@ describe("Settings import", () => {
           <Route path="/" element={<EstateOverview />} />
         </Routes>
       </Providers>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Import atlas" })).toBeEnabled(),
     );
 
     const body = JSON.stringify({
@@ -82,6 +125,11 @@ describe("Settings sample", () => {
     const sampleSection = screen
       .getByRole("heading", { name: "Sample atlas" })
       .closest("section") as HTMLElement;
+    await waitFor(() =>
+      expect(
+        within(sampleSection).getByRole("button", { name: "Load the sample" }),
+      ).toBeEnabled(),
+    );
 
     await user.click(within(sampleSection).getByRole("button", { name: "Load the sample" }));
     await waitFor(() => expect(screen.getByText("Sample loaded.")).toBeInTheDocument());

@@ -7,6 +7,7 @@ import { AppHeader } from "../components/AppHeader";
 import { EstateOverview } from "./EstateOverview";
 import { PalaceEditor } from "./PalaceEditor";
 import { WalkSession } from "./WalkSession";
+import { Settings } from "./Settings";
 import { FirstRunWalkthrough } from "../components/onboarding/FirstRunWalkthrough";
 import { AtlasProvider } from "../state/AtlasContext";
 import { ToastProvider } from "../components/Toast";
@@ -149,6 +150,90 @@ describe("responsive structure at 390px", () => {
     for (const name of ["Missed", "Shaky", "Sharp"]) {
       expect(screen.getByRole("button", { name }).className).toMatch(/\bbtn\b/);
     }
+  });
+
+  it("settings is fluid at 390px with a single primary action", async () => {
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    const { container } = renderWithProviders(
+      <Routes>
+        <Route path="/settings" element={<Settings />} />
+      </Routes>,
+      { initialEntries: ["/settings"] },
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Export atlas" }),
+      ).toBeEnabled(),
+    );
+
+    expect(container.querySelector(".container")).not.toBeNull();
+    const widthPinned = Array.from(container.querySelectorAll<HTMLElement>("*")).filter(
+      (el) => /width:\s*\d{3,}px/.test(el.getAttribute("style") ?? ""),
+    );
+    expect(widthPinned).toEqual([]);
+    for (const btn of screen.getAllByRole("button")) {
+      expect(btn.className).toMatch(/\bbtn\b/);
+    }
+    // One obvious primary action (Export), secondaries subordinate.
+    expect(container.querySelectorAll(".btn--primary")).toHaveLength(1);
+  });
+
+  it("the walk summary is fluid at 390px with a single primary action", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    const palace = newPalace("Childhood home");
+    palace.spots = [{ ...newSpot(200, 200, 0), label: "Front door", contents: "A kite" }];
+    await saveAtlas({ ...newAtlas(), palaces: [palace] });
+
+    const { container } = render(
+      <MemoryRouter initialEntries={[`/palace/${palace.id}/walk`]}>
+        <ToastProvider>
+          <AtlasProvider>
+            <Routes>
+              <Route path="/palace/:id/walk" element={<WalkSession />} />
+            </Routes>
+          </AtlasProvider>
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText("Spot 1 of 1")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Reveal" }));
+    await user.click(screen.getByRole("button", { name: "Sharp" }));
+    await screen.findByRole("heading", { name: "Walk done." });
+
+    const widthPinned = Array.from(container.querySelectorAll<HTMLElement>("*")).filter(
+      (el) => /width:\s*\d{3,}px/.test(el.getAttribute("style") ?? ""),
+    );
+    expect(widthPinned).toEqual([]);
+    // The one action out of the summary is the primary link back to the plan.
+    expect(container.querySelectorAll(".btn--primary")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Back to the plan" }).className).toMatch(
+      /\bbtn\b/,
+    );
+  });
+
+  it("the overview leaves one primary action and keeps export reachable in the header", async () => {
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    const { container } = renderWithProviders(
+      <>
+        <AppHeader />
+        <EstateOverview />
+      </>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Start your atlas" })).toBeInTheDocument(),
+    );
+
+    // The redundant page-head Settings shortcut is gone; export stays reachable
+    // through the header nav.
+    expect(screen.queryByRole("button", { name: "Export or import" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
+      "href",
+      "/settings",
+    );
+    // The empty-state add action is the single primary on the screen.
+    expect(container.querySelectorAll(".btn--primary")).toHaveLength(1);
   });
 
   it("the first-run checklist docks at 390px without overflow or covering the primary action", async () => {

@@ -234,6 +234,54 @@ describe("SketchSurface health coloring", () => {
     ).toBe("sharp");
   });
 
+  it("after three mixed-grade walks the plan shows a healthy-to-failing spread, failing spots ringed", () => {
+    // A strong spot (graded sharp each walk) and a weak spot (missed each walk),
+    // replayed over three real walks, then read a week after the last one.
+    const walkDates = [
+      new Date("2026-09-01T10:00:00.000Z"),
+      new Date("2026-09-03T10:00:00.000Z"),
+      new Date("2026-09-05T10:00:00.000Z"),
+    ];
+    const now = new Date("2026-09-15T10:00:00.000Z");
+    let palace = palaceWithSpots([
+      [100, 100],
+      [400, 200],
+    ]);
+    walkDates.forEach((when, i) => {
+      palace = assembleCompletedWalk(
+        palace,
+        [
+          { spotId: palace.spots[0].id, grade: "sharp" },
+          { spotId: palace.spots[1].id, grade: "missed" },
+        ],
+        when,
+        when,
+        `w${i}`,
+      );
+    });
+
+    const { container } = renderSurface(palace, { now });
+
+    const labels = palace.spots.map(
+      (s) => scheduler.spotHealth(s.fsrs, now).label,
+    );
+    const healthy = labels.filter((l) => l === "sharp" || l === "holding");
+    const failing = labels.filter((l) => l === "fading" || l === "atRisk");
+    expect(healthy.length).toBeGreaterThanOrEqual(1);
+    expect(failing.length).toBeGreaterThanOrEqual(1);
+
+    // Every failing spot wears its non-color ring, so decay reads at a glance.
+    palace.spots.forEach((s) => {
+      const label = scheduler.spotHealth(s.fsrs, now).label;
+      const ring = container.querySelector(
+        `[data-spot-id="${s.id}"] .health-ring`,
+      );
+      if (label === "fading" || label === "atRisk") {
+        expect(ring).not.toBeNull();
+      }
+    });
+  });
+
   it("pan/zoom view changes never recompute the health map", () => {
     const spy = vi.spyOn(scheduler, "spotHealth");
     const palace = palaceWithSpots(

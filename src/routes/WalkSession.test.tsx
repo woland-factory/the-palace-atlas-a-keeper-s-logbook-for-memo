@@ -162,6 +162,17 @@ describe("WalkSession", () => {
     saved.palaces[0].spots.forEach((s) => expect(s.fsrs.reps).toBe(0));
   });
 
+  it("exposes exactly one top-level heading while the walk is in progress", async () => {
+    const palace = makePalace(3);
+    await seed(palace);
+    renderWalk(palace.id);
+
+    await screen.findByText("Spot 1 of 3");
+    const h1s = screen.getAllByRole("heading", { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]).toHaveTextContent("Walking Childhood home");
+  });
+
   it("announces progress in an aria-live status region", async () => {
     const palace = makePalace(2);
     await seed(palace);
