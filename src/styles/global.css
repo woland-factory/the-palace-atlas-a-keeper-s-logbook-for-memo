@@ -272,8 +272,10 @@ button {
   padding: var(--space-6) var(--space-4);
   text-align: center;
 }
+.empty-state h1,
 .empty-state h2 {
   margin: 0 0 var(--space-2);
+  font-size: 1.5rem;
 }
 .empty-state p {
   margin: 0 auto var(--space-5);

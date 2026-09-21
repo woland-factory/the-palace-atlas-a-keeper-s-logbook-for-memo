@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAtlas } from "../state/AtlasContext";
 import { EmptyState } from "../components/EmptyState";
 import { PalaceCard } from "../components/PalaceCard";
@@ -29,7 +28,6 @@ export function EstateOverview() {
     replaceAtlas,
   } = useAtlas();
   const { showToast } = useToast();
-  const navigate = useNavigate();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const palaces = atlas.palaces;
@@ -62,9 +60,6 @@ export function EstateOverview() {
             <p>Every building you memorize in, kept safe outside your head.</p>
           )}
         </div>
-        <button className="btn btn--ghost" onClick={() => navigate("/settings")}>
-          Export or import
-        </button>
       </div>
 
       {loading ? (

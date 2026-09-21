@@ -6,19 +6,23 @@ import { readAndImport } from "../features/portability/importAtlas";
 import { getSampleAtlas, isSamplePalace } from "../features/sample/sample";
 
 export function Settings() {
-  const { atlas, replaceAtlas } = useAtlas();
+  const { atlas, loading, replaceAtlas } = useAtlas();
   const { showToast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
+    if (loading) return;
     downloadAtlas(atlas);
     showToast("Atlas exported.");
   };
 
-  const handleImportPick = () => fileRef.current?.click();
+  const handleImportPick = () => {
+    if (loading) return;
+    fileRef.current?.click();
+  };
 
   const handleFile = async (file: File | undefined) => {
-    if (!file) return;
+    if (loading || !file) return;
     const result = await readAndImport(file);
     if (result.ok) {
       replaceAtlas(result.atlas);
@@ -30,7 +34,7 @@ export function Settings() {
   };
 
   return (
-    <main className="container">
+    <main className="container" aria-busy={loading}>
       <div className="page-head">
         <h1>Settings and data</h1>
       </div>
@@ -39,10 +43,18 @@ export function Settings() {
         <h2>Your atlas file</h2>
         <p>Keep a copy you own. One file holds every palace and its history.</p>
         <div className="settings-actions">
-          <button className="btn btn--primary" onClick={handleExport}>
+          <button
+            className="btn btn--primary"
+            onClick={handleExport}
+            disabled={loading}
+          >
             Export atlas
           </button>
-          <button className="btn btn--secondary" onClick={handleImportPick}>
+          <button
+            className="btn btn--secondary"
+            onClick={handleImportPick}
+            disabled={loading}
+          >
             Import atlas
           </button>
           <input
@@ -62,6 +74,7 @@ export function Settings() {
         <div className="settings-actions">
           <button
             className="btn btn--secondary"
+            disabled={loading}
             onClick={() => {
               replaceAtlas(getSampleAtlas());
               showToast("Sample loaded.");
@@ -71,6 +84,7 @@ export function Settings() {
           </button>
           <button
             className="btn btn--ghost"
+            disabled={loading}
             onClick={() => {
               replaceAtlas({
                 ...atlas,

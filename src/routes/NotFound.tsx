@@ -4,7 +4,7 @@ export function NotFound() {
   return (
     <main className="container">
       <div className="empty-state">
-        <h2>That page is not here</h2>
+        <h1>That page is not here</h1>
         <p>The link may be old. Head back to your palaces.</p>
         <div className="empty-state__actions">
           <Link className="btn btn--primary" to="/">

@@ -97,7 +97,7 @@ export function WalkSession() {
     return (
       <main className="container">
         <div className="empty-state">
-          <h2>This palace is not in your atlas.</h2>
+          <h1>This palace is not in your atlas.</h1>
           <div className="empty-state__actions">
             <Link className="btn btn--primary" to="/">
               Back to your palaces
@@ -112,7 +112,7 @@ export function WalkSession() {
     return (
       <main className="container">
         <div className="empty-state">
-          <h2>Add your first spot, then walk.</h2>
+          <h1>Add your first spot, then walk.</h1>
           <p>A walk steps through the spots you placed, one at a time.</p>
           <div className="empty-state__actions">
             <Link className="btn btn--primary" to={`/palace/${palace.id}`}>
@@ -146,6 +146,7 @@ export function WalkSession() {
 
   return (
     <main className="container walk">
+      <h1 className="visually-hidden">Walking {palace.name}</h1>
       <div className="walk__head">
         <button className="btn btn--ghost walk__leave" onClick={handleLeave}>
           Leave walk

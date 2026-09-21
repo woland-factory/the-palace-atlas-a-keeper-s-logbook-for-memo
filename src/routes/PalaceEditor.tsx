@@ -208,7 +208,7 @@ export function PalaceEditor() {
     return (
       <main className="container">
         <div className="empty-state">
-          <h2>This palace is not in your atlas.</h2>
+          <h1>This palace is not in your atlas.</h1>
           <div className="empty-state__actions">
             <Link className="btn btn--primary" to="/">
               Back to your palaces
@@ -256,7 +256,7 @@ export function PalaceEditor() {
 
       <div className="editor__toolbar">
         <button
-          className="btn btn--primary"
+          className="btn btn--secondary"
           onClick={addSpotAtCenter}
           disabled={full}
         >
