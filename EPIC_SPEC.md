@@ -1,38 +1,34 @@
-# EPIC SPEC — The living heat map & the schedule
+# EPIC SPEC — Polish pass (no new features)
 
-This EPIC delivers the product's signature moment: the floor plan the keeper
-drew glows where recall is failing. It paints each spot's FSRS health as color
-directly on the plan, surfaces per-palace overall health and next-walk date on
-the estate overview, leads the keeper to the palace most at risk, and seeds a
-demo palace with real walk history so the heat map is visible on staging within
-a minute of first load without hand input.
+A UX, performance, and copy pass over the whole delivered product against the
+QUALITY BAR and the quality differentiator. Every screen, state, and string
+already ships. This EPIC tightens what exists and adds nothing. It is an
+audit-and-tune pass: measure each surface against the bar, fix the defects the
+audit finds, and prove each fix with an automated test. When a surface already
+clears the bar, leave it alone and record that it was checked.
 
-Everything the heat map needs already exists and is untouched by earlier EPICs:
-the FSRS seam (`src/features/walk/scheduler.ts`) exposes a 0–1 `retrievability`,
-five labeled `HealthLabel` bands with fixed thresholds, `spotHealth`, and the
-`data-health` render hooks in the spot list and walk summary. This EPIC adds the
-color layer, the palace-level aggregates (overall health + earliest-due next
-walk, which do not exist yet), the overview at-risk lead, and the `SEED_DEMO`
-auto-seed. **No data-model or schema change. `SCHEMA_VERSION` stays `1`. No
-migration is added this EPIC.**
+**This is a refinement pass. No new feature, control, screen, route, data field,
+or setting is in scope, even one that seems easy or obviously nice.** If an
+audit turns up something that would need a new capability to fix, it is a
+`requested_task`, not work for this EPIC.
 
 ---
 
 ## Quality differentiator (hold every relevant decision to this)
 
-**Decay you can read at a glance.** Every competitor shows a list, a streak, or
+**Decay you can read at a glance.** Every alternative shows a list, a streak, or
 a schedule. This app colors the floor plan the keeper drew so the spots their
 memory is losing are obvious in one look.
 
-**What it demands of THIS EPIC:** this is the EPIC where the differentiator
-ships or fails. The reading must be **instant** (color is CSS keyed off a
-pre-computed health map, so a plan of dozens of spots pans and zooms with no
-recompute), **honest** (color comes straight from `spotHealth`/`retrievability`;
-an unwalked spot is neutral, never a faked score), and **unmistakable** (the
-worst spots read as failing at a glance, and the color is never the only signal:
-each spot also carries a shape/pattern, a number, an accessible health word, and
-a legend). If the plan does not visibly glow red where memory is dying, the EPIC
-has not shipped, regardless of passing tests.
+**What it demands of THIS EPIC:** the heat map already ships (EPIC 4). This is
+the pass where its reading is proven **instant, honest, and unmistakable** on
+real data, or tuned until it is. The bar for this EPIC is not "the colors
+render" — it is "a keeper glances at the seeded demo, or at their own palace
+after a third walk, and the failing spots jump out without study." Any polish
+choice that touches the plan, the card thumbnails, the legend, or the health
+palette is held to that standard, not just the baseline bar. Speed and copy work
+elsewhere in this EPIC serve the same end: nothing may slow or clutter the one
+reading the product wins on.
 
 ---
 
@@ -40,496 +36,364 @@ has not shipped, regardless of passing tests.
 
 ### In scope
 
-- **Per-spot color on the drawn plan.** Color every spot marker on the palace
-  view plan (`SketchSurface`) by its current `HealthLabel`, driven by
-  `spotHealth(spot.fsrs, now)`. Color updates immediately after a walk. Color is
-  never the only signal (band-specific marker shape/outline pattern, the spot
-  number, the health word in the accessible name, and an on-plan legend).
-- **Health color tokens + legend.** A five-band health scale as CSS design
-  tokens (light and dark), validated for contrast against the app's parchment
-  surfaces, and a compact `HealthLegend` that reads without relying on color
-  alone.
-- **Palace-level aggregates (new code).** A pure `palaceHealth(palace, now)`
-  giving overall health (the worst walked spot governs), the earliest-due
-  next-walk date, and counts; plus `sortByRisk` / `mostAtRisk` helpers. Nothing
-  like this exists yet.
-- **Estate overview health.** Each `PalaceCard` shows its overall health and its
-  next-walk date, and its thumbnail glows by health. The overview orders palaces
-  so the most-at-risk one is first and flags it with a "Walk next" chip.
-- **Immediate post-walk payoff.** The walk summary shows the just-updated plan,
-  glowing, so the keeper sees the walk reflected before leaving the walk screen.
-- **`SEED_DEMO` auto-seed (new code).** On first boot only, when `SEED_DEMO` is
-  on and no atlas is stored yet, seed one demo palace carrying real walk history
-  so its plan glows with a mix of healthy and failing spots. It is clearly
-  labeled a sample and removable in one action, and never re-seeds after removal.
-- **README + copy sweep** for the shipped heat map, next-walk schedule, and
-  `SEED_DEMO` behavior.
+A measured pass over the shipped surfaces below, fixing only defects found:
 
-### Out of scope (this EPIC only — do not build)
+- **Signature-moment reading.** Audit the heat map on the seeded demo and on a
+  freshly-walked palace (a simulated third walk) and confirm the failing spots
+  read at a glance. Tune only the existing health tokens
+  (`src/styles/tokens.css`) and the non-color ring treatment
+  (`src/components/HealthRing.tsx`, `.health-ring` CSS) if the reading is not
+  instant. No new signals, no new markup.
+- **Designed empty / loading / error states** across every screen: the estate
+  overview, the palace editor, the walk, the walk summary, settings, the
+  not-found route, and the app-level error boundary. Each must hold the layout
+  steady while loading, tell a first-time viewer what the screen is for, and, on
+  error, say what to do next in the product's voice.
+- **One primary action per screen; copy cut to the shortest unambiguous form.**
+  Confirm each screen has exactly one obvious primary action with secondary
+  actions visibly subordinate, and trim any redundant control or wording.
+- **Mobile pass at 390px** across every screen: no horizontal scroll, tap
+  targets about 44px, text readable without zoom, every feature reachable.
+- **Accessibility pass**: color contrast, visible focus on every interactive
+  element, every input labeled, a sane heading hierarchy and landmarks on every
+  route, and keyboard reach for everything a pointer can do (including the modal
+  dialog and the SVG plan).
+- **Performance pass**: first meaningful render within about 1s; every
+  interaction acknowledged within 100ms; the heat map and estate overview stay
+  smooth with a large atlas (many palaces, dozens of spots each).
+- **Mechanical copy sweep** over every user-visible string (components, routes,
+  the demo/sample fixtures, onboarding copy): zero em-dashes, zero banned LLM
+  vocabulary, zero negative empty-state phrasing.
+- **README verification** against the actual `package.json`, `docker/Dockerfile`,
+  `docker/docker-entrypoint.sh`, `public/env.js`, and `docker-compose.staging.yml`.
 
-- **No data-model, schema, migration, or persistence-format change.** The
-  `fsrs` block and `walks` history already store everything. Do not touch
-  `src/model/atlas.ts` types, `SCHEMA_VERSION`, `migrate.ts`, `validate.ts`, or
-  the IndexedDB store shape.
-- **No change to the FSRS math or thresholds.** Reuse `scheduler.ts` exactly:
-  `retrievability`, `bandFor`, `spotHealth`, `HEALTH_THRESHOLDS`. Do not add a
-  second retrievability path or re-tune the bands.
-- **No coloring of the in-progress walk plan.** During an active walk,
-  `WalkPlan` keeps its current active-spot focus and stays uncolored, so the
-  keeper is not biased about which spots are "red" while testing recall. The
-  glow lands on the summary and the palace view.
-- **No change to the existing manual "Load the sample" fixture or behavior**
-  (`getSampleAtlas`, the two walk-less sample palaces). The required glowing
-  sample is the `SEED_DEMO` auto-seed, a distinct palace. (A follow-up may give
-  the manual sample walk history; it is not this EPIC.)
-- **No walk-history editing, no walk log/detail screen, no export/import
-  changes.**
+### Out of scope (do not build)
+
+- **No new features of any kind.** No new screen, route, control, setting, data
+  field, chart, or interaction. Refinement only.
+- **No gold-plating past the bar.** No animations, transitions, or motion beyond
+  what already ships. No design system, no theming controls, no new component
+  abstractions for three screens.
+- **No premature optimization beyond the stated budgets.** Do not add
+  virtualization, workers, or caching layers unless a measured 390px + large-atlas
+  check actually misses the 100ms / 1s budget; if it does and the fix needs new
+  infrastructure, file a `requested_task`.
+- **No data-model, schema, migration, or persistence-format change.**
+  `SCHEMA_VERSION` stays `1`. Do not touch `src/model/atlas.ts` types,
+  `migrate.ts`, `validate.ts`, or the IndexedDB store shape.
+- **No change to the FSRS math or thresholds** (`scheduler.ts`:
+  `retrievability`, `bandFor`, `spotHealth`, `HEALTH_THRESHOLDS`). Health-color
+  tuning changes token values only, never the band boundaries.
+- **No change to what the seeded demo or manual sample contain** beyond copy
+  fixes the sweep requires. The demo's spot count, coordinates, and grade
+  pattern stay as shipped unless the signature-moment audit proves the spread
+  does not read (see T1).
 
 ### Non-goals (binding — building any of these is a defect)
 
-- **No cross-palace daily-round medley.**
-- **No pre-built template palaces beyond the single seeded demo.**
-- **No streak, calendar, or habit analytics of the user's activity.** Health is
-  about the palace, not the habit. Do not add "days practiced", "current
-  streak", "walks this week", or any activity chart.
+Inherited verbatim from the product plan; named here so this pass does not drift
+into them under the banner of "polish":
+
+- No accounts, login, cloud sync, or server-stored user data.
+- No LLM features of any kind, including a bring-your-own-key garnish.
+- No sharing, public library, collaboration, or multiplayer.
+- No gamification: no streaks, badges, points, levels, or activity analytics.
+- No pre-built or template palaces beyond the single seeded demo.
+- No CAD-grade drawing (dimensions, layers, snapping, image floor plans, art
+  tools).
+- No typed-answer verification; recall stays self-graded.
+- No cross-palace daily-rounds medley.
+- No native mobile apps.
 
 ---
 
-## Quality bar mapping (how the written bar applies here)
+## Current state (the audit's starting point)
 
-- **§1 Perceived speed.** The heat reads on first render. Compute a single `now`
-  per view and memoize the per-spot health map so pan/zoom (which only change the
-  SVG `viewBox`) trigger zero FSRS recompute; color is pure CSS off
-  `data-health`. A plan at the 200-spot cap must pan smoothly. No new hot-path
-  work per frame.
-- **§2 Mobile-first.** The glowing plan, the legend, the card health chips, and
-  the "Walk next" lead are all fully usable and readable at 390px with no
-  horizontal scroll. The legend wraps or compacts; it never forces overflow.
-- **§3 Designed states.** A palace with spots but no walk yet reads "Not walked
-  yet" with neutral markers, not a fake glow. A palace with zero spots shows no
-  health chip (its card invites drawing). The overview with no walked palace
-  shows no "Walk next" lead, not an empty banner.
-- **§4 First-run / staging.** `SEED_DEMO` is already hardcoded `"1"` in
-  `docker-compose.staging.yml`, so once the seed builder exists staging shows the
-  glowing demo within a minute with zero input. (The guided walkthrough is a
-  separate EPIC and already ships; do not add another.)
-- **§5 Security.** No backend, no new route. The only new persisted content is
-  the demo atlas, which contains no secrets and no real PII. Never log or send
-  spot `contents`/`label`; the seed and health code must not add any Sentry/Umami
-  payload carrying spot text.
-- **§6 Accessibility.** Health color meets contrast against the parchment
-  surfaces; the marker number stays legible on every band; each spot's health is
-  conveyed by shape/pattern + accessible word + legend, never color alone; the
-  legend and chips keep visible focus/semantics; keyboard reaches everything.
-- **§7 Radically simple.** The plan is the product. No paragraphs explaining the
-  colors. The legend is a compact key, the card chip is a few words, the lead is
-  a chip plus one primary action.
-- **§8 Human-voice copy.** Every new string is swept (no `—`/`–`, no banned LLM
-  vocabulary, positive/direct phrasing). Reuse the existing band words in
-  `HEALTH_TEXT`.
-- **§9 README.** Update the README so the heat map and schedule are described as
-  shipped, and `SEED_DEMO` is documented as the staging demo seed (no factory
-  internals).
+The whole core loop is delivered and tested. Screens and the components behind
+them:
+
+| Route | Screen | File | Primary action |
+|---|---|---|---|
+| `/` | Estate overview | `src/routes/EstateOverview.tsx` | Add a palace (`NewPalaceForm`) |
+| `/palace/:id` | Palace editor + heat map | `src/routes/PalaceEditor.tsx` | Walk this palace |
+| `/palace/:id/walk` | Recall walk / summary | `src/routes/WalkSession.tsx` | Grade and advance |
+| `/settings` | Data (export / import / sample) | `src/routes/Settings.tsx` | Export atlas |
+| `*` | Not found | `src/routes/NotFound.tsx` | Go to your palaces |
+
+Shared: `AppHeader`, `FirstRunWalkthrough` + `GuidedChecklist`, `EmptyState`,
+`SaveStatus`, `Toast`, `ConfirmDialog`, `ErrorBoundary`, the sketch surface and
+health rendering (`SketchSurface`, `WalkPlan`, `PalaceThumbnail`, `HealthLegend`,
+`HealthRing`), and the tokens/global stylesheet (`src/styles/`).
+
+Known-good baseline the audit must not regress: memoized per-`(spots, now)`
+health maps so pan/zoom never recompute FSRS; a color-blind-safe reading
+(band-specific ring shape + spot number + accessible health word + legend, never
+hue alone); a designed empty state, loading skeleton, and not-found on the
+overview, editor, and walk; a first-run walkthrough that retires after the first
+success; `SEED_DEMO=1` wired in staging compose.
+
+### Concrete candidate defects the audit already surfaced
+
+These were found while scoping and are the audit's first targets. Each is a
+refinement of an existing surface, not a new feature. The implementer confirms,
+fixes, and tests each; if any turns out to already clear the bar, record that.
+
+1. **Settings has no loading state and can act on an unloaded atlas.**
+   `Settings.tsx` reads `atlas` directly and never consults `loading`. During the
+   initial async load `atlas` is the empty `newAtlas()`, so opening `/settings`
+   directly and pressing **Export atlas** before the load resolves downloads an
+   empty file. Fix: hold Settings steady while `loading` (a skeleton or a disabled
+   export in place, matching the other screens), so no action fires against an
+   unloaded atlas. This is the §3 "loading state holds the layout steady" clause,
+   currently missing on this one screen.
+
+2. **The in-progress walk screen has no `h1`.** On `/palace/:id/walk` before the
+   summary, the top heading is `WalkStep`'s `h2` (the spot name) with no `h1`
+   above it, so that route's heading hierarchy starts at `h2`. The done-summary
+   correctly uses an `h1`. Fix: give the active walk a single `h1` (the progress
+   line "Spot N of M", or the palace name) so every route has one top-level
+   heading. Semantic structure only; no visible clutter added.
+
+3. **The confirmation dialog does not trap focus.** `ConfirmDialog` focuses the
+   confirm button and closes on Escape and backdrop click, but Tab can move focus
+   to the controls behind the modal. Fix: keep focus within the dialog while it is
+   open and return focus to the trigger on close, so a keyboard user is not
+   dropped behind an `aria-modal` surface. Minimal change to the existing
+   component; no new dialog behavior.
+
+4. **Possible duplicate route to Settings on the overview.** The overview
+   `page-head` carries an "Export or import" ghost button while the header nav
+   already links to Settings. Audit whether both are needed; if the ghost button
+   is redundant it is a candidate to cut under §7 (one obvious primary action,
+   subordinate secondaries). This is a judgment call: cut only if it genuinely
+   reduces competition for attention, and keep the export path reachable.
+
+5. **Copy sweep candidates.** The bulk of the copy is already tight. The sweep
+   (T7) must still mechanically re-check every string. Watch specifically:
+   `WalkStep`'s revealed-empty line ("This spot is empty. Fill it in the editor.")
+   and `SaveStatus`'s error line ("Your last change did not save. Try again.") —
+   both must state what to do next and avoid the banned negative patterns. Do not
+   "fix" them into a banned pattern (for example "Nothing filed yet" would newly
+   violate the "No … yet" rule).
+
+---
+
+## Quality bar mapping (how the written bar applies to this pass)
+
+- **§1 Perceived speed.** First render is a static bundle behind nginx; confirm
+  real content (not a blank page) is on screen within about 1s and that the
+  initial load shows the skeleton, never a white screen. Every interaction
+  (add spot, grade, reveal, rename, delete-confirm) acknowledges within 100ms.
+  Preserve the memoized health map: pan/zoom of a 200-spot plan must not
+  recompute FSRS.
+- **§2 Mobile-first.** Every screen fully usable at 390px: the glowing plan,
+  legend, card chips, toolbar, walk grade grid, dialog, toasts, and the guided
+  checklist all fit with no horizontal scroll; tap targets about 44px; text
+  readable without zoom.
+- **§3 Designed states.** Every screen's empty, loading, and error surface is
+  designed (see candidate defect 1 for the one known gap). Errors say what to do
+  next in the product's voice; no raw trace, error code, or dead end.
+- **§4 First-run.** The walkthrough already leads a new keeper through the loop
+  and retires after first success. Confirm it still appears only for a brand-new
+  keeper, is skippable, and never returns; do not add a second onboarding
+  surface. The seeded demo still shows the differentiator within a minute on
+  staging.
+- **§5 Security hygiene.** No backend and no new route, so no server authz to
+  add. Keep the import boundary validation intact. The sweep and any logging
+  touched must never put spot `label`/`contents` (the keeper's memorized
+  material) into a Sentry or Umami payload.
+- **§6 Accessibility.** Contrast on text and health colors, visible focus on
+  every interactive element (buttons, links, inputs, the SVG spot `<g>`s, the
+  dialog), every input labeled, a heading/landmark structure that is correct on
+  every route (see candidate defect 2), and full keyboard reach including the
+  modal (see candidate defect 3).
+- **§7 Radically simple.** One obvious primary action per screen, secondaries
+  subordinate, copy cut to the shortest unambiguous form (see candidate
+  defect 4). The plan is the product; no paragraph explains the colors.
+- **§8 Human-voice copy.** The mechanical sweep (T7) covers every user-visible
+  string, including the demo and sample fixtures and the walkthrough steps.
+- **§9 README.** Verify the README against the actual build, container, and
+  compose files (T8); fix any command or claim that has drifted.
 
 ---
 
 ## Technical design
 
-### Reused building blocks (do not modify)
-
-- `src/features/walk/scheduler.ts` — `retrievability(f, now): number | null`
-  (0–1, `null` when never walked), `bandFor(r): HealthLabel`,
-  `spotHealth(f, now): { retrievability, label, due }`, `HealthLabel =
-  "unwalked" | "sharp" | "holding" | "fading" | "atRisk"`, `HEALTH_THRESHOLDS =
-  { sharp: 0.9, holding: 0.7, fading: 0.5 }`.
-- `src/features/walk/healthText.ts` — `HEALTH_TEXT` (`unwalked: "Not walked
-  yet"`, `sharp: "Sharp"`, `holding: "Holding"`, `fading: "Fading"`, `atRisk:
-  "At risk"`), `formatDue(iso)`.
-- `src/features/walk/walkSession.ts` — `assembleCompletedWalk(palace, results,
-  startedAt, completedAt, walkId?)` (the atomic end-of-walk transform; reuse it
-  to build the demo's real walk history).
-- `src/features/sketch/geometry.ts` — `spotsPathD`, `outlinePathD`,
-  `thumbnailViewBox`, `MAX_SPOTS = 200`, `Point`.
-- Spot geometry: logical `x,y` in `viewBox` space (default 1000×1000).
-
-### New / changed files
+No new modules. The pass touches existing files only, and only where the audit
+finds a defect. Expected touch set (a file appears only if its audit fails):
 
 ```
-src/features/walk/
-  palaceHealth.ts            # NEW: palaceHealth(), mostAtRisk(), sortByRisk()
-  palaceHealth.test.ts       # NEW
-  healthText.ts              # CHANGED: add formatNextWalk()
-src/features/sample/
-  demoSeed.ts                # NEW: buildDemoAtlas(now), DEMO_PALACE_ID, patterns
-  demoSeed.test.ts           # NEW
-  sample.ts                  # CHANGED: export isSamplePalace(id) covering demo id
-src/persistence/
-  atlasStore.ts              # CHANGED: loadAtlasOrSeedDemo({seedDemo, now})
-  atlasStore.test.ts         # CHANGED: seed-once behavior
-src/state/
-  AtlasContext.tsx           # CHANGED: initial load calls loadAtlasOrSeedDemo
-components/
-  HealthLegend.tsx           # NEW: the color+shape+word key
-  HealthLegend.test.tsx      # NEW
-  PalaceCard.tsx             # CHANGED: real health chip + next-walk + glow thumb
-  sketch/SketchSurface.tsx   # CHANGED: color markers by health + pattern + a11y
-  sketch/PalaceThumbnail.tsx # CHANGED: color spots by health
-  walk/WalkPlan.tsx          # CHANGED: optional showHealth+now (summary payoff)
-  walk/WalkSummary.tsx       # CHANGED: render the glowing plan
-routes/
-  EstateOverview.tsx         # CHANGED: sortByRisk + "Walk next" lead + pass now
-  PalaceEditor.tsx           # CHANGED: capture now once; show HealthLegend
-styles/
-  tokens.css                 # CHANGED: health color tokens (light + dark)
-  global.css                 # CHANGED: [data-health] rules, legend, chip
-README.md                    # CHANGED
+src/routes/Settings.tsx          # loading state; guard export until loaded (defect 1)
+src/routes/WalkSession.tsx       # single h1 on the active walk (defect 2)
+src/components/ConfirmDialog.tsx # focus trap + return focus (defect 3)
+src/routes/EstateOverview.tsx    # possible cut of the redundant Settings link (defect 4)
+src/styles/tokens.css            # health token tuning ONLY if the reading fails (T1)
+src/components/HealthRing.tsx    # ring treatment tuning ONLY if the reading fails (T1)
+src/styles/global.css            # spacing/contrast/tap-target fixes the audit finds
+  (various components)           # copy fixes the sweep finds (T7)
+README.md                        # verified/corrected against the real files (T8)
 ```
 
-### Palace-level health (`src/features/walk/palaceHealth.ts`) — new, pure
+Guardrails that bound every change:
 
-Every function takes explicit `now: Date` (deterministic tests), reuses
-`spotHealth`, and never fabricates a number for an unwalked spot.
-
-```ts
-export interface PalaceHealth {
-  overall: HealthLabel;          // worst walked spot's band; "unwalked" if none walked
-  worstRetrievability: number | null; // min retrievability among walked spots; null if none
-  nextDue: string | null;        // earliest due ISO among walked spots; null if none
-  spotCount: number;
-  walkedCount: number;           // spots with retrievability !== null
-  atRiskCount: number;           // spots whose band is "atRisk"
-}
-
-export function palaceHealth(palace: Palace, now: Date): PalaceHealth;
-```
-
-Rules:
-- Compute `spotHealth(s.fsrs, now)` for every spot.
-- `walked` = spots whose `retrievability !== null`.
-- `nextDue` = the earliest (min ISO) `due` among `walked`; `null` if none walked.
-  **This is the "next-walk date = earliest spot due date."** It is derived, not
-  stored, so it recomputes on every render and therefore after each walk.
-- `worstRetrievability` = min `retrievability` among `walked`; `null` if none.
-- `overall` = `bandFor(worstRetrievability)` when any spot is walked, else
-  `"unwalked"`. (Deliberately: never-walked spots do not fabricate a due date or
-  a score, matching `spotHealth`'s contract. Do not "fix" this by treating a
-  fresh spot's placeholder `due` as a real schedule.)
-- `atRiskCount` = count of spots whose band is `"atRisk"`.
-
-```ts
-// Palaces sorted most-at-risk first. Walked palaces order by ascending
-// worstRetrievability (lower = worse), tiebreak by earliest nextDue, then name.
-// Palaces with no walked spot sort after all walked ones, by name. Stable.
-export function sortByRisk(palaces: Palace[], now: Date): Palace[];
-
-// The single most-at-risk palace (first of sortByRisk that has a walked spot),
-// or null when no palace has been walked.
-export function mostAtRisk(palaces: Palace[], now: Date): Palace | null;
-```
-
-`healthText.ts` gains one display helper (keep display strings here):
-
-```ts
-// "Walk due now" when nextDue is at/earlier than now; "Next walk Oct 2"
-// otherwise; "Not walked yet" when nextDue is null.
-export function formatNextWalk(nextDue: string | null, now: Date): string;
-```
-
-### The health color scale (tokens + legend)
-
-Map the five bands to a good→failing ramp so failing spots read as heat. Add
-tokens to `tokens.css` for both modes; the marker uses the band fill, and the
-`data-health` value selects it. **Starting values (from the validated dataviz
-status palette; the implementer MUST re-run the palette validator against the
-app's parchment surfaces — light `#f6f3ec`, dark `#262320` — and adjust any step
-that fails the lightness/chroma/CVD/contrast checks):**
-
-```css
-:root {
-  --health-sharp:   #0ca30c; /* good     */
-  --health-holding: #d98a00; /* warning  */
-  --health-fading:  #e06a2c; /* serious  */
-  --health-atrisk:  #cc3b3b; /* critical */
-  --health-unwalked:#8a8272; /* neutral, reads as "no reading yet" */
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --health-sharp:   #3fbf4a;
-    --health-holding: #e7a52a;
-    --health-fading:  #e88a55;
-    --health-atrisk:  #e06b63;
-    --health-unwalked:#7d7566;
-  }
-}
-```
-
-Non-color redundancy (all required, so the reading never depends on hue alone):
-- **Shape / pattern per band on the plan.** Healthy bands (`sharp`, `holding`)
-  render a solid marker outline; failing bands (`fading`, `atRisk`) render a
-  distinct outline treatment that reads in grayscale and under CVD (for example
-  `fading` a dashed ring, `atRisk` a heavier double/halo ring); `unwalked`
-  renders a light hollow marker. Pattern is driven by `data-health`, so it is
-  testable and needs no color.
-- **The spot number stays on every marker** (identity, not health) and must keep
-  ≥ 4.5:1 contrast against its marker fill in both modes. Give the marker a 2px
-  surface ring (parchment-colored) separating fill from the connecting path, and
-  choose the number ink per band so it always clears contrast (dark ink on the
-  amber `holding` step; light ink on the darker green/orange/red steps). Do not
-  let the number wash out on any band.
-- **Accessible word.** Each interactive spot `<g>`'s `aria-label` includes the
-  health word, e.g. `Spot 3, Kitchen table, At risk`.
-- **Legend.** `HealthLegend` lists the five bands, each row a color swatch **plus
-  its shape/pattern plus its word** (reuse `HEALTH_TEXT`). It reads with color
-  removed. Compact enough for 390px (wraps, no overflow).
-
-`HealthLegend` renders on the palace view (`PalaceEditor`, near the plan) and on
-the walk summary. Keep it small; it is a key, not an essay.
-
-### Coloring the surfaces
-
-- **`SketchSurface` (palace view plan — the signature surface).** For each spot,
-  compute `spotHealth(s.fsrs, now)` and set `data-health={label}` on the spot
-  `<g>` (and/or its `spot__marker`). CSS colors the marker fill from the band
-  token and applies the band pattern. Include the health word in the existing
-  `spotAccessibleName`-based `aria-label`. Capture `now` once and memoize the
-  per-spot health map (`useMemo` keyed on `spots` + `now`) so pan/zoom do not
-  recompute FSRS. Editing a spot (place/move/rename) keeps working; a newly
-  placed, unwalked spot shows the neutral `unwalked` marker.
-- **`PalaceThumbnail` (overview card mini-plan).** Accept `now` and color each
-  thumbnail spot circle by `spotHealth` via `data-health`. This is what makes the
-  estate readable at a glance. Keep it cheap (no interactivity, no legend).
-- **`WalkPlan` (reused for the summary payoff).** Add optional props `showHealth?:
-  boolean` and `now?: Date`. When `showHealth` is true, color spots by
-  `spotHealth` with `data-health` (no active-spot highlight needed). When absent
-  (the in-progress walk), behavior is unchanged and uncolored.
-- **`WalkSummary`.** Render `<WalkPlan palace={palace} activeSpotId={null}
-  showHealth now={now} />` above the existing tally/list, plus a `HealthLegend`,
-  so the keeper sees the plan glow with the walk they just finished before
-  leaving. Keep the existing per-spot text list (it already carries
-  `data-health`); color its health text from the same tokens.
-- **`SpotList` / `WalkSummary` text health.** Color the existing
-  `.spot-list__health` / `.walk-summary__spot-health` text by `data-health` from
-  the band tokens so the words and the plan agree.
-
-### Estate overview
-
-- `PalaceCard`: replace the hardcoded `Not walked yet` line with real output
-  from `palaceHealth(palace, now)`:
-  - Health chip: the overall band word (`HEALTH_TEXT[overall]`), colored by
-    `data-health`, reusing the existing `.palace-card__health::before` dot (now
-    tinted by band).
-  - Next-walk: `formatNextWalk(nextDue, now)` beside it (e.g. `At risk · Walk
-    due now` or `Holding · Next walk Oct 2`).
-  - When `spotCount === 0`, show no health chip (the card already reads `0
-    spots`); do not print a band for a palace with nothing drawn.
-  - Pass `now` to `PalaceThumbnail` so the mini-plan glows.
-- `EstateOverview`:
-  - Capture one `now`. Order the list with `sortByRisk(palaces, now)` so the
-    most-at-risk palace is first.
-  - Flag the top at-risk palace with a **"Walk next"** chip on its card, and give
-    that card a primary "Walk this palace" action linking to
-    `/palace/:id/walk`. When `mostAtRisk` is null (no palace walked yet), show no
-    flag and no lead — just the list.
-  - Do not duplicate the palace (flag in place; do not also render a separate
-    banner card for the same palace).
-
-### `SEED_DEMO` auto-seed (`src/features/sample/demoSeed.ts`)
-
-Goal: on first boot on staging (`SEED_DEMO=1`, already wired), a fresh visitor
-with no data sees a real palace whose plan glows with a mix of healthy and
-failing spots, with zero hand input, clearly labeled a sample, removable in one
-action, and never re-seeded after removal.
-
-`buildDemoAtlas(now: Date): Atlas` — fully deterministic given `now`:
-- One palace, `id = DEMO_PALACE_ID` (a stable constant), `name = "Corner bakery
-  (sample)"`, with an `outline` and **8 spots** (fixed ids `demo-spot-1..8`,
-  fixed logical coords, human labels/contents). Concrete, swept fixture:
-
-  | # | label | contents |
-  |---|-------|----------|
-  | 1 | Front counter | A brass bell rings twice. |
-  | 2 | Bread racks | Seven rye loaves in a row. |
-  | 3 | Coffee machine | Steam curls into the letter S. |
-  | 4 | Chalkboard menu | Today's number is twelve. |
-  | 5 | Window seat | A grey cat sleeps in the sun. |
-  | 6 | Back kitchen | Three copper pots hang by size. |
-  | 7 | Storeroom | A blue crate holds nine apples. |
-  | 8 | Side door | The key turns the wrong way once. |
-
-- **Real walk history that produces the band spread honestly.** Do NOT
-  hand-write `fsrs` values. Replay a fixed set of past walk sessions through the
-  production transform `assembleCompletedWalk`, so the demo carries genuine
-  `walks` records and genuine advanced `fsrs`, and the whole thing round-trips.
-  - Sessions at `now − {40, 25, 12, 4}` days (fixed offsets; `startedAt`/
-    `completedAt` derived from `now`; fixed deterministic `walkId`s).
-  - A per-spot grade pattern across the four sessions, chosen so that at `now`
-    the spots span the bands. Strong spots graded `sharp` repeatedly build high
-    stability and stay `sharp`/`holding`; weak spots graded `missed`/`shaky`
-    stay low and land `fading`/`atRisk` even though last reviewed the same day.
-    Suggested patterns (tune to hit the spread; the test asserts it):
-    - spots 1–2: `[sharp, sharp, sharp, sharp]`
-    - spots 3–4: `[sharp, shaky, sharp, shaky]`
-    - spots 5–6: `[shaky, shaky, missed, shaky]`
-    - spots 7–8: `[missed, shaky, missed, missed]`
-  - Fold chronologically: for each session build `results` for all spots and call
-    `assembleCompletedWalk`, threading the returned palace forward.
-- Wrap the palace in a valid `Atlas` (`schemaVersion: SCHEMA_VERSION,
-  exportedAt: null`).
-- **Guarantee (asserted by test):** evaluated at the seed `now`, at least one
-  spot is in `{sharp, holding}` and at least one is in `{fading, atRisk}`, and
-  not all spots share one band. Because everything is relative to `now`, the
-  spread is invariant to the absolute date, so it holds within a minute of any
-  first load.
-
-Labeling + removal:
-- `sample.ts` exports `isSamplePalace(id)` recognizing both the manual sample ids
-  (`SAMPLE_PALACE_IDS`) and `DEMO_PALACE_ID`. `PalaceCard`'s "Sample" tag and
-  the Settings "Remove sample" action both use it, so the demo shows a "Sample"
-  tag and is cleared by the existing one-action "Remove sample" (and by the
-  card's own Delete). No new removal UI is required.
-
-Seed-once wiring (`atlasStore.ts` + `AtlasContext`):
-
-```ts
-// Seed the demo exactly once, on the very first boot, and never again.
-export async function loadAtlasOrSeedDemo(opts: {
-  seedDemo: boolean;
-  now: Date;
-}): Promise<Atlas>;
-```
-- If an atlas record already exists → `migrate()` it and return (never seed;
-  this is why removing the demo is permanent — an empty stored record still
-  counts as "present").
-- Else if `opts.seedDemo` → `atlas = buildDemoAtlas(opts.now)`; persist it with
-  `saveAtlas` (so it is durable and behaves like the user's own data); return it.
-- Else → return `newAtlas()` **without writing** (unchanged fresh-DB behavior;
-  non-staging builds are untouched).
-
-`AtlasContext`'s initial load calls
-`loadAtlasOrSeedDemo({ seedDemo: getRuntimeConfig().seedDemo, now: new Date() })`
-instead of `loadAtlas()`. Keep the existing "do not write on plain read"
-behavior for the non-seed path. Leave `loadAtlas` in place for existing callers/
-tests.
-
-### Performance & correctness notes
-
-- One `now` per view, memoized health maps; color via CSS only. A 200-spot plan
-  must pan/zoom without recomputing FSRS per frame.
-- `now` advancing in real time drifts bands honestly (that is the point). The
-  seeded spread is anchored to elapsed time, not an absolute date, so it never
-  goes stale for "within a minute of first load."
-- Coloring must not introduce any Sentry/Umami payload carrying `label` or
-  `contents`.
+- Token tuning changes color/ring **values and geometry**, never the band
+  thresholds or the `data-health` contract the tests key off.
+- Any contrast or color change to `tokens.css` must be re-validated against the
+  parchment surfaces (light `#f6f3ec` / `#ffffff`, dark `#1c1a16` / `#262320`)
+  for both text (≥ 4.5:1) and the spot-number ink on each band fill, in light
+  and dark. Record the validated ratios.
+- The heat-map reading must not depend on hue: whatever tuning happens, each spot
+  keeps its band ring shape, its number, its accessible health word, and the
+  legend row.
+- No change may cause a per-frame FSRS recompute or otherwise regress the
+  memoized health map.
 
 ---
 
-## Ordered task list (each task lists its own acceptance criteria)
+## Ordered task list (each task carries its own acceptance criteria)
 
-**T1 — Health color tokens + legend.** Add the five band tokens to `tokens.css`
-(light + dark), run the palette validator against the parchment surfaces and
-adjust failing steps, add `[data-health]` CSS (marker fill + band pattern, and
-text-health color), and build `HealthLegend` (swatch + pattern + word).
-- **Provable:** tokens exist for both modes; `HealthLegend` renders all five
-  bands with the exact `HEALTH_TEXT` words and a non-color shape per band; the
-  legend reads at 390px with no overflow; number/marker contrast is documented as
+**T1 — Signature-moment reading.** Audit the heat map at a glance on (a) the
+seeded demo (`buildDemoAtlas(now)`) and (b) a fresh palace after a simulated
+third walk with a mixed grade pattern. Confirm failing spots read instantly:
+distinct band fills, `fading`/`atRisk` wearing their ring treatment, legible
+numbers, and the most-at-risk palace surfacing first on the overview. Tune only
+the health tokens and `HealthRing` geometry if the reading is not instant; leave
+them untouched if it already reads.
+- **Provable:** a test builds a palace, replays three walks whose grades span
+  strong/weak spots, and asserts the palace-view plan shows at least one spot in
+  `{sharp, holding}` and at least one in `{fading, atRisk}`, with the failing
+  spots carrying a `HealthRing`. The seeded demo's spread test still passes. Any
+  token change is re-validated for contrast (ratios recorded); no threshold or
+  `data-health` change. Manual 390px glance at the demo noted in the result.
+
+**T2 — Designed states sweep.** Walk every screen's empty, loading, and error
+surface. Fix the Settings loading gap (defect 1): hold the layout steady while
+`loading` and prevent export/import against an unloaded atlas. Confirm the
+overview, editor, walk, summary, not-found, and error boundary each hold layout
+while loading, name their purpose when empty, and say what to do next on error.
+- **Provable:** a test mounts Settings while the atlas is still loading and
+  asserts the layout is held (skeleton or disabled primary in place) and that
+  Export does not fire against the empty initial atlas. Existing empty/loading/
+  not-found tests on the other screens stay green. No raw trace or error code is
+  rendered anywhere (error boundary and import-failure paths asserted).
+
+**T3 — Primary action + copy trim.** Confirm each screen has one obvious primary
+action with subordinate secondaries. Resolve defect 4 (cut the redundant
+overview Settings link if it competes with the primary action). Trim any wording
+that can shrink without losing meaning.
+- **Provable:** each route renders exactly one `.btn--primary` as its main
+  action (asserted per screen), and secondary/ghost actions carry the
+  subordinate classes. If the overview ghost link is cut, a test confirms the
+  export path is still reachable (header Settings link). No new control added.
+
+**T4 — Mobile 390px pass.** Verify every screen at a 390px viewport: no
+horizontal scroll, tap targets about 44px, readable text, every feature
+reachable, the dialog and toasts fit. Fix any overflow or small-target the audit
+finds in `global.css`.
+- **Provable:** extend `responsive.test.tsx` so each screen (overview, editor,
+  walk, summary, settings) asserts no inline fixed width wider than the viewport
+  and that interactive controls carry the tap-target `.btn`/link classes. Manual
+  390px pass across all screens noted in the result.
+
+**T5 — Accessibility pass.** Fix the heading hierarchy on the active walk
+(defect 2) and the dialog focus trap (defect 3). Confirm every input is labeled,
+focus is visible on every interactive element including the SVG spot `<g>`s, and
+the keyboard reaches everything a pointer can (place via "Add spot", nudge with
+arrows, grade, confirm/cancel the dialog, skip the walkthrough).
+- **Provable:** a test asserts the active walk route exposes a single `h1`; a
+  dialog test asserts focus starts on the confirm control, Tab stays within the
+  dialog, and Escape/close returns focus to the trigger; existing label/focus
+  tests stay green. Contrast of text and health colors is documented as
   validated.
 
-**T2 — Palace-level health helpers.** `palaceHealth`, `sortByRisk`,
-`mostAtRisk`, and `formatNextWalk`.
-- **Provable:** `nextDue` equals the earliest `due` among walked spots and is
-  `null` when none walked; `overall` is the worst walked band (`"unwalked"` when
-  none walked); after a simulated walk that changes due dates, `palaceHealth`
-  returns the new earliest due; `sortByRisk` puts the lowest-retrievability
-  walked palace first and never-walked palaces last.
+**T6 — Performance pass.** Confirm first meaningful render is fast and that the
+heat map and overview stay smooth with a large atlas. Verify the memoized health
+map is not recomputed on pan/zoom. Add nothing (no virtualization) unless a
+measured check misses budget; if it does, file a `requested_task`.
+- **Provable:** a test asserts that for a 50+-spot palace, repeated view
+  (viewBox) changes do not recompute the per-spot health map (spy on
+  `spotHealth` or assert a stable memoized reference). Manual large-atlas
+  smooth-pan and sub-1s first-render checks noted in the result.
 
-**T3 — Color the palace view plan.** Wire `data-health` + band pattern +
-accessible word into `SketchSurface`; capture one `now`; memoize the health map;
-show `HealthLegend` in `PalaceEditor`.
-- **Provable:** each spot `<g>` carries the correct `data-health`; an unwalked
-  spot is `unwalked` (neutral, no fake score); after completing a walk and
-  returning to the palace view the affected spots' `data-health` reflects the new
-  bands; editing/placing spots still works.
+**T7 — Mechanical copy sweep.** Search every user-visible string across
+`src/components/`, `src/routes/`, `src/features/sample/` (demo + manual sample
+fixtures), and `src/features/onboarding/` for the characters `—` and `–`, the
+banned LLM vocabulary, and negative empty-state phrasing ("You don't have",
+"No … yet", "Nothing … here", "Unable to", "Something went wrong"). Fix every hit
+in a user-visible string; keep it positive and direct. Code comments are exempt.
+- **Provable:** a test (or documented grep) shows zero em-dashes, zero banned
+  vocabulary, and zero negative empty-state phrasing in user-visible strings,
+  including the demo/sample fixture copy and the walkthrough steps. Any string
+  changed still reads as a person wrote it.
 
-**T4 — Post-walk payoff.** Extend `WalkPlan` with `showHealth`/`now`; render the
-glowing plan + legend in `WalkSummary`; color the summary/list health text.
-- **Provable:** the summary shows a colored plan whose spot `data-health` matches
-  the just-updated `spotHealth`; the in-progress walk plan is unchanged and
-  uncolored.
-
-**T5 — Overview health + at-risk lead.** Real health chip + `formatNextWalk` on
-`PalaceCard`, glowing `PalaceThumbnail`, `sortByRisk` ordering, and the "Walk
-next" flag + primary action on the most-at-risk card.
-- **Provable:** each card shows its overall band and next-walk text; a 0-spot
-  palace shows no band; the thumbnail spots carry `data-health`; the most-at-risk
-  palace is first and flagged with "Walk next" and a "Walk this palace" action;
-  with no walked palace there is no flag.
-
-**T6 — `SEED_DEMO` auto-seed.** `buildDemoAtlas`, `DEMO_PALACE_ID`,
-`isSamplePalace`, and `loadAtlasOrSeedDemo`; wire `AtlasContext` to it.
-- **Provable:** with a fresh (empty) DB and `seedDemo: true`, the loaded atlas
-  contains the demo palace with non-empty `walks` and, at the seed `now`, a mix
-  of `{sharp|holding}` and `{fading|atRisk}` spots; the demo card shows the
-  "Sample" tag; "Remove sample" clears it; a second load after removal does NOT
-  re-seed; with `seedDemo: false` and an empty DB, no palace is seeded and
-  nothing is written.
-
-**T7 — Copy sweep + README.** Sweep every new string; update README for the
-shipped heat map, the next-walk schedule, and `SEED_DEMO` as the staging demo.
-- **Provable:** no `—`/`–`, no banned vocabulary, no negative empty-state
-  phrasing in any new user-visible string (including the demo fixture); README
-  describes the heat map/schedule as shipped and documents `SEED_DEMO` with no
-  factory internals.
-
-**T8 — Gate.** `npm run typecheck`, `npm run build`, `npm test` all green;
-manual 390px check of the glowing plan, legend, card chips, and lead noted in the
-result.
+**T8 — README verification + gate.** Verify the README against
+`package.json` (scripts), `docker/Dockerfile`, `docker/docker-entrypoint.sh`,
+`public/env.js`, and `docker-compose.staging.yml`: the clone/dev/build/preview
+commands, the container build/run commands and exposed port, the `/env.js`
+variable table (`SENTRY_DSN`, `UMAMI_URL`, `UMAMI_WEBSITE_ID`, `SEED_DEMO`), and
+the test commands (`npm run typecheck`, `npm test`, `npm run build`,
+`bash scripts/e2e.sh`). Correct any drift; no factory internals. Then run the
+full gate.
+- **Provable:** every command in the README maps to a real script/file and runs
+  as written (verification noted in the result). `npm run typecheck`,
+  `npm run build`, `npm test`, and the Playwright e2e (`bash scripts/e2e.sh`) all
+  pass. Manual 390px check of the glow, legend, cards, and lead noted.
 
 ---
 
-## Test plan (Vitest, jsdom, fake-indexeddb; e2e where noted)
+## Test plan (Vitest + Testing Library + fake-indexeddb; Playwright e2e where noted)
 
-Each planner acceptance criterion maps to at least one automated test.
+Each planner acceptance criterion maps to at least one automated test. Prefer
+extending the existing suites (`EstateOverview.test.tsx`, `PalaceEditor.test.tsx`,
+`WalkSession.test.tsx`, `Settings.test.tsx`, `responsive.test.tsx`,
+`HealthLegend.test.tsx`, `PalaceCard.test.tsx`, `SketchSurface.test.tsx`,
+`demoSeed.test.ts`, `palaceHealth.test.ts`, `e2e/atlas.spec.ts`).
 
 | Planner criterion | Test(s) |
 |---|---|
-| Each spot colored by current retrievability on a clear scale, updating immediately after a walk; color never the only signal | `SketchSurface.test.tsx`: spots render the `data-health` matching `spotHealth`; an unwalked spot is `unwalked`; after applying `assembleCompletedWalk` the rerendered plan's `data-health` changes. `HealthLegend.test.tsx`: five bands, each with its word and a non-color shape marker; legend readable with color removed. Marker/number contrast validated (documented). |
-| Overview shows per-palace overall health + next-walk date and makes the most-at-risk obvious | `EstateOverview.test.tsx`: cards show the overall band word and `formatNextWalk` text; most-at-risk palace is first and flagged "Walk next" with a "Walk this palace" action; 0-spot palace shows no band; no flag when nothing walked. `PalaceCard.test.tsx`: chip + next-walk render from `palaceHealth`. |
-| SEED_DEMO shows a real glowing sample (mix of healthy/failing) within a minute, zero input, labeled + removable in one action | `demoSeed.test.ts`: `buildDemoAtlas(now)` yields one labeled sample palace with non-empty `walks`; at `now` ≥1 spot in `{sharp,holding}` and ≥1 in `{fading,atRisk}`, not all one band; round-trips through export/import unchanged. `atlasStore.test.ts`: empty DB + `seedDemo:true` seeds and persists once; present record never re-seeds; `seedDemo:false` writes nothing. `isSamplePalace(DEMO_PALACE_ID) === true`. |
-| Next-walk date = earliest spot due date, recomputed after each walk | `palaceHealth.test.ts`: `nextDue` equals the min walked `due`; `null` when none walked; changes to the new earliest due after a simulated walk. |
-| Heat map reads at 390px and renders with no perceptible lag for dozens of spots | `responsive.test.tsx`: the plan container and legend carry no fixed width forcing overflow at 390px. `SketchSurface.test.tsx`: the memoized health map is not recomputed on a view (pan/zoom) change (assert via a spy/`useMemo` dependency, or that health is computed once for a 50-spot palace across repeated view updates). Manual 390px + large-palace smooth-pan check noted in the result. |
-| Health colors meet contrast; legend/key reads without relying on color alone | Palette validator run against parchment surfaces (light `#f6f3ec`, dark `#262320`), results documented; `HealthLegend.test.tsx`: every row exposes its band word and shape (identity survives color removal). |
-| Signature moment reachable end-to-end | `e2e/atlas.spec.ts` (extend): load with the seeded demo (or load sample then walk), open the palace, assert colored spots are visible on the plan and the summary. |
+| Signature moment lands on the demo and on a real third walk, readable in one look | New/extended `SketchSurface.test.tsx` or `PalaceEditor.test.tsx`: after three replayed walks with mixed grades, the plan shows a band spread (≥1 healthy, ≥1 failing) and failing spots carry a `HealthRing`. `demoSeed.test.ts` spread test stays green. e2e (`atlas.spec.ts`): open the seeded/sample palace and assert colored spots are visible on the plan. |
+| Every empty/loading/error state designed, layout held, errors say what to do next | `Settings.test.tsx`: layout held while loading; Export does not act on the unloaded atlas. Existing overview/editor/walk empty + loading + not-found tests stay green; error-boundary fallback renders no raw trace. |
+| One obvious primary action per screen; copy cut | Per-screen assertion that exactly one primary action is the main control and secondaries are subordinate; if the overview Settings link is cut, a test confirms export stays reachable. |
+| Full mobile pass at 390px, no horizontal scroll, ~44px targets | Extended `responsive.test.tsx` covering overview, editor, walk, summary, settings: no inline fixed width past the viewport; interactive controls carry the tap-target classes. Manual 390px pass noted. |
+| Accessibility: contrast, focus, labels, semantic headings/landmarks, keyboard reach | `WalkSession.test.tsx`: active walk exposes a single `h1`. `ConfirmDialog` test: focus starts on confirm, stays trapped, returns to trigger on close. Existing label/focus tests stay green; contrast ratios documented. |
+| Performance: <1s first render, 100ms feedback, smooth with a large atlas | `SketchSurface.test.tsx`: the memoized health map is not recomputed across repeated view changes for a 50+-spot palace. Manual large-atlas smooth-pan and first-render checks noted. |
+| Copy sweep finds zero em-dashes, banned vocab, negative empty-state phrasing | A sweep test (or documented grep) over user-visible strings including fixtures and walkthrough steps. |
+| README verified accurate against the actual compose/build files | Documented verification that each README command maps to a real script/file and runs; the gate suites pass. |
 
-CI gate for DONE: `npm run typecheck`, `npm run build`, `npm test` pass; e2e
-green via `bash scripts/e2e.sh`.
+CI gate for DONE: `npm run typecheck`, `npm run build`, `npm test` pass, and the
+Playwright e2e is green via `bash scripts/e2e.sh`.
 
 ---
 
 ## Definition of done
 
-- The palace view plan colors every spot by its `spotHealth` band, updates
-  immediately after a walk, and the reading never depends on color alone (shape/
-  pattern + number + accessible word + legend). An unwalked spot is neutral, not
-  a fake score.
-- The estate overview shows each palace's overall health and next-walk date,
-  orders palaces most-at-risk first, and flags the most-at-risk one with a "Walk
-  next" primary action. Thumbnails glow by health.
-- `next-walk date` equals the earliest walked-spot due date and recomputes after
-  each walk.
-- `SEED_DEMO=1` on a fresh boot seeds one clearly-labeled sample palace whose
-  plan glows with a mix of healthy and failing spots within a minute, removable
-  in one action, and it never re-seeds after removal. `SEED_DEMO` off / a present
-  atlas seeds nothing.
-- Health colors are validated for contrast against the parchment surfaces; the
-  legend reads without color; the plan, legend, cards, and lead are usable at
-  390px with no horizontal scroll; a dozens-of-spots plan pans without FSRS
-  recompute.
+- The heat map reads at a glance on the seeded demo and on a palace after a third
+  walk: failing spots are unmistakable, the failing bands carry their ring
+  treatment, numbers stay legible, and the most-at-risk palace surfaces first. If
+  tuning was needed, only token values and ring geometry changed and the new
+  contrast ratios are recorded.
+- Every screen's empty, loading, and error state is designed and holds layout;
+  the Settings loading gap is closed so no action fires against an unloaded
+  atlas; no raw trace, code, or dead end appears anywhere.
+- Each screen has one obvious primary action with subordinate secondaries, and
+  redundant wording/controls are trimmed.
+- Every screen is fully usable at 390px with no horizontal scroll, ~44px tap
+  targets, and readable text.
+- Accessibility clears the bar: the active walk has a single `h1`, the dialog
+  traps and returns focus, every input is labeled, focus is visible everywhere,
+  and the keyboard reaches everything a pointer can.
+- Performance clears the budgets: sub-1s first render, ~100ms interaction
+  feedback, and a smooth heat map / overview on a large atlas with no per-frame
+  FSRS recompute.
+- The mechanical copy sweep finds zero em-dashes, zero banned LLM vocabulary, and
+  zero negative empty-state phrasing across every user-visible string, including
+  the demo/sample fixtures and the walkthrough steps.
+- The README is verified accurate against `package.json`, the Dockerfile, the
+  entrypoint, `public/env.js`, and the staging compose file, with no factory
+  internals.
 - No data-model/schema/migration/persistence change; `SCHEMA_VERSION` stays `1`;
-  the FSRS math and thresholds are untouched.
-- Every new user-visible string passes the human-voice sweep (no `—`/`–`, no
-  banned LLM vocabulary, no negative empty-state phrasing), including the demo
-  fixture copy.
+  the FSRS math and thresholds are untouched; no new feature, control, or route
+  was added.
 - `npm run typecheck`, `npm run build`, `npm test`, and the Playwright e2e pass;
-  a manual 390px check of the glow, legend, chips, and lead is noted in the
+  a manual 390px check of the glow, legend, cards, and lead is noted in the
   result.
-```
