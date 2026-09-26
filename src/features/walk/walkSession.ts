@@ -2,6 +2,7 @@
 // rendering. The walk order is `palace.spots` as stored (index === walk order);
 // nothing here re-sorts.
 import type { Palace, Walk } from "../../model/atlas";
+import { uuidv4 } from "../../model/uuid";
 import { gradeSpot, type Grade } from "./scheduler";
 
 export interface WalkResult {
@@ -17,7 +18,7 @@ export function assembleCompletedWalk(
   results: WalkResult[],
   startedAt: Date,
   completedAt: Date,
-  walkId: string = crypto.randomUUID(),
+  walkId: string = uuidv4(),
 ): Palace {
   const gradeById = new Map(results.map((r) => [r.spotId, r.grade]));
   const spots = palace.spots.map((spot) => {

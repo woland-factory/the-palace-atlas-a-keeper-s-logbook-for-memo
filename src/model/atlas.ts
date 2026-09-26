@@ -1,3 +1,5 @@
+import { uuidv4 } from "./uuid";
+
 export const SCHEMA_VERSION = 1 as const;
 
 export interface Atlas {
@@ -47,7 +49,7 @@ export interface Walk {
 }
 
 function newId(): string {
-  return crypto.randomUUID();
+  return uuidv4();
 }
 
 export function newAtlas(): Atlas {
